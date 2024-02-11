@@ -459,8 +459,8 @@ namespace kaixo {
             KAIXO_SIMD_BASE_TYPE(int) return a.value << b.value;
         }
 
-        template<std::integral Ty>
-        friend KAIXO_INLINE basic_simd KAIXO_VECTORCALL operator<<(const basic_simd& a, Ty b) noexcept {
+        template<std::integral Arg>
+        friend KAIXO_INLINE basic_simd KAIXO_VECTORCALL operator<<(const basic_simd& a, Arg b) noexcept {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_slli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_slli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_slli_epi32(a.value, static_cast<unsigned int>(b));
@@ -474,8 +474,8 @@ namespace kaixo {
             KAIXO_SIMD_BASE_TYPE(int) return a.value >> b.value;
         }
 
-        template<std::integral Ty>
-        friend KAIXO_INLINE basic_simd KAIXO_VECTORCALL operator>>(const basic_simd& a, Ty b) noexcept {
+        template<std::integral Arg>
+        friend KAIXO_INLINE basic_simd KAIXO_VECTORCALL operator>>(const basic_simd& a, Arg b) noexcept {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_srli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_srli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_srli_epi32(a.value, static_cast<unsigned int>(b));
@@ -534,7 +534,7 @@ namespace kaixo {
             return _sum_256_f(x0);
         }
 
-        KAIXO_INLINE base KAIXO_VECTORCALL sum() {
+        KAIXO_INLINE base KAIXO_VECTORCALL sum() const noexcept {
             KAIXO_SIMD_CASE(SSE3 | SSE, 128, float) return _sum_128_f(value);
             KAIXO_SIMD_CASE(AVX | SSE, 256, float) return _sum_256_f(value);
             KAIXO_SIMD_CASE(AVX512F | AVX512DQ | AVX | SSE, 512, float) return _sum_512_f(value);
@@ -784,6 +784,81 @@ namespace kaixo {
         if ((~supported_instruction_sets & simd_256::instructions) == 0) return lambda.operator()<basic_simd<Ty, 256, simd_256::instructions>>();
         if ((~supported_instruction_sets & simd_128::instructions) == 0) return lambda.operator()<basic_simd<Ty, 128, simd_128::instructions>>();
         return lambda.operator()<basic_simd<Ty, 0, 0>>();
+    }
+
+    // ------------------------------------------------
+
+    template<class Ty> struct base : std::type_identity<Ty> {};
+    template<is_simd Ty> struct base<Ty> : std::type_identity<typename Ty::base> {};
+    template<class Ty> using base_t = typename base<Ty>::type;
+
+    // ------------------------------------------------
+
+    template<class Type>
+    KAIXO_INLINE Type KAIXO_VECTORCALL loadu(base_t<Type> const* ptr, std::size_t index) noexcept {
+        if constexpr (!is_simd<Type>) return ptr[index];
+        else return Type(ptr + index);
+    }
+
+    template<class Type>
+    KAIXO_INLINE Type KAIXO_VECTORCALL load(base_t<Type> const* ptr, std::size_t index) noexcept {
+        if constexpr (!is_simd<Type>) return ptr[index];
+        else return Type::load(ptr + index);
+    }
+
+    template<class Type>
+    KAIXO_INLINE void KAIXO_VECTORCALL storeu(base_t<Type>* ptr, const Type& value) noexcept {
+        if constexpr (!is_simd<Type>) *ptr = value;
+        else value.storeu(ptr);
+    }
+
+    template<class Type>
+    KAIXO_INLINE void KAIXO_VECTORCALL store(base_t<Type>* ptr, const Type& value) noexcept {
+        if constexpr (!is_simd<Type>) *ptr = value;
+        else value.store(ptr);
+    }
+
+    template<class Type, std::convertible_to<Type> B>
+    KAIXO_INLINE Type KAIXO_VECTORCALL bool_and(const Type& condition, B value) noexcept {
+        if constexpr (!is_simd<Type>) return condition * value;
+        else return condition & value;
+    }
+
+    template<class Type, std::invocable A, std::invocable B>
+    KAIXO_INLINE Type KAIXO_VECTORCALL iff(const Type& condition, A then, B otherwise) noexcept {
+        if constexpr (!is_simd<Type>) return condition ? then() : otherwise();
+        else return condition & then() | ~condition & otherwise();
+    }
+
+    // Multiply with 1 or -1
+    template<class Type, std::convertible_to<Type> B>
+    KAIXO_INLINE Type KAIXO_VECTORCALL mul1(const Type& condition, B value) noexcept {
+        if constexpr (!is_simd<Type>) return condition * value;
+        else return condition ^ ((-0.f) & value); // Toggle sign bit if value has sign bit
+    };
+
+    template<class To, class Type>
+    KAIXO_INLINE To KAIXO_VECTORCALL cast(const Type& v) noexcept {
+        if constexpr (!is_simd<Type>) return (To)v;
+        else return v.template cast<To>();
+    }
+
+    template<class To, class Type>
+    KAIXO_INLINE To KAIXO_VECTORCALL reinterpret(const Type& v) noexcept {
+        if constexpr (!is_simd<Type>) return std::bit_cast<To>(v);
+        else return v.template reinterpret<To>();
+    }
+
+    template<class Type, class Ptr>
+    KAIXO_INLINE decltype(auto) KAIXO_VECTORCALL gather(Ptr* data, const Type& index) noexcept {
+        if constexpr (!is_simd<Type>) return data[(std::int64_t)index];
+        else return index.gather(data);
+    }
+
+    template<class Type>
+    KAIXO_INLINE base_t<Type> KAIXO_VECTORCALL sum(const Type& value) noexcept {
+        if constexpr (!is_simd<Type>) return value;
+        else return value.sum();
     }
 
     // ------------------------------------------------
