@@ -710,7 +710,7 @@ namespace kaixo {
 
         template<class To>
         KAIXO_INLINE basic_simd<To, Bits, Instructions> KAIXO_VECTORCALL reinterpret() const noexcept {
-            KAIXO_SIMD_BASE return reinterpret_cast<To>(value);
+            KAIXO_SIMD_BASE return std::bit_cast<To>(value);
             if constexpr (std::same_as<Ty, To>) return value;
             else if constexpr (std::same_as<To, int>) {
                 KAIXO_SIMD_CASE(SSE2, 128, float) return _mm_castps_si128(value);
