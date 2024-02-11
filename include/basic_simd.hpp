@@ -34,6 +34,7 @@ namespace kaixo {
         SSE4_1   = 0b00000000'00000000'00000000'00010000ull,
         AVX      = 0b00000000'00000000'00000001'00000000ull,
         AVX2     = 0b00000000'00000000'00000010'00000000ull,
+        FMA      = 0b00000000'00000000'00000100'00000000ull,
         AVX512F  = 0b00000000'00000001'00000000'00000000ull,
         AVX512DQ = 0b00000000'00000010'00000000'00000000ull,
         AVX512VL = 0b00000000'00000100'00000000'00000000ull,
@@ -58,6 +59,7 @@ namespace kaixo {
         if ((ecx & (1 <<  0)) != 0) result |= instruction_set::SSE3;
         if ((ecx & (1 << 19)) != 0) result |= instruction_set::SSE4_1;
         if ((ecx & (1 << 28)) != 0) result |= instruction_set::AVX;
+        if ((ecx & (1 << 12)) != 0) result |= instruction_set::FMA;
         return result;
     }
     
@@ -563,14 +565,6 @@ namespace kaixo {
             KAIXO_SIMD_BASE_TYPE(float) return std::floor(value);
         }
         
-        KAIXO_INLINE basic_simd KAIXO_VECTORCALL fmod1() const noexcept {
-            KAIXO_SIMD_CASE(SSE | SSE4_1, 128, float) return _mm_sub_ps(value, _mm_floor_ps(value));
-            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_sub_ps(value, _mm_trunc_ps(value));
-            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_sub_ps(value, _mm256_floor_ps(value));
-            KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_sub_ps(value, _mm512_floor_ps(value));
-            KAIXO_SIMD_BASE_TYPE(float) return value - std::trunc(value);
-        }
-
         KAIXO_INLINE basic_simd KAIXO_VECTORCALL ceil() const noexcept {
             KAIXO_SIMD_CASE(SSE4_1, 128, float) _mm_ceil_ps(value);
             KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_ceil_ps(value);
@@ -744,6 +738,70 @@ namespace kaixo {
         KAIXO_INLINE basic_simd KAIXO_VECTORCALL iff(auto then, auto otherwise) const noexcept {
             KAIXO_SIMD_BASE return value ? then() : otherwise();
             else return *this & then() | ~*this & otherwise();
+        }
+
+        // ------------------------------------------------
+        
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL fast_abs() const noexcept {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_andnot_ps(_mm_set1_ps(-0.0), value);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_andnot_ps(_mm256_set1_ps(-0.0), value);
+            KAIXO_SIMD_CASE(AVX512F | AVX512DQ, 512, float) return _mm512_andnot_ps(_mm512_set1_ps(-0.0), value);
+            KAIXO_SIMD_BASE_TYPE(float) return value > 0 ? value : -value;
+        }
+        
+        // Requires -0.5 < value < 0.5, outputs sin(value * 2 * pi)
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL fast_normalized_sin() const noexcept {
+            KAIXO_SIMD_CASE(SSE | FMA, 128, float) {
+                // value * (-(16.f * abs(value)) + 8.f)
+                auto _inter1 = _mm_fnmadd_ps(_mm_set1_ps(16.f), _mm_andnot_ps(_mm_set1_ps(-0.0), value), _mm_set1_ps(8.f));
+                auto _inter2 = _mm_mul_ps(_inter1, value);
+                // _inter2 * ((0.224f * abs(_inter2)) + 0.776f)
+                auto _inter3 = _mm_fmadd_ps(_mm_set1_ps(0.224f), _mm_andnot_ps(_mm_set1_ps(-0.0), _inter2), _mm_set1_ps(0.776f));
+                return _mm_mul_ps(_inter3, _inter2);
+            }
+            else KAIXO_SIMD_CASE(SSE, 128, float) {
+                // value * (8.f - (16.f * abs(value)))
+                auto _inter1 = _mm_sub_ps(_mm_set1_ps(8.f), _mm_mul_ps(_mm_set1_ps(16.f), _mm_andnot_ps(_mm_set1_ps(-0.0), value)));
+                auto _inter2 = _mm_mul_ps(_inter1, value);
+                // _inter2 * (0.776f + (0.224f * abs(_inter2)))
+                auto _inter3 = _mm_add_ps(_mm_set1_ps(0.776f), _mm_mul_ps(_mm_set1_ps(0.224f), _mm_andnot_ps(_mm_set1_ps(-0.0), _inter2)));
+                return _mm_mul_ps(_inter3, _inter2);
+            }
+            KAIXO_SIMD_CASE(AVX | FMA, 256, float) {
+                // value * (-(16.f * abs(value)) + 8.f)
+                auto _inter1 = _mm256_fnmadd_ps(_mm256_set1_ps(16.f), _mm256_andnot_ps(_mm256_set1_ps(-0.0), value), _mm256_set1_ps(8.f));
+                auto _inter2 = _mm256_mul_ps(_inter1, value);
+                // _inter2 * ((0.224f * abs(_inter2)) + 0.776f)
+                auto _inter3 = _mm256_fmadd_ps(_mm256_set1_ps(0.224f), _mm256_andnot_ps(_mm256_set1_ps(-0.0), _inter2), _mm256_set1_ps(0.776f));
+                return _mm256_mul_ps(_inter3, _inter2);
+            }
+            else KAIXO_SIMD_CASE(AVX, 256, float) {
+                // value * (8.f - (16.f * abs(value)))
+                auto _inter1 = _mm256_sub_ps(_mm256_set1_ps(8.f), _mm256_mul_ps(_mm256_set1_ps(16.f), _mm256_andnot_ps(_mm256_set1_ps(-0.0), value)));
+                auto _inter2 = _mm256_mul_ps(_inter1, value);
+                // _inter2 * (0.776f + (0.224f * abs(_inter2)))
+                auto _inter3 = _mm256_add_ps(_mm256_set1_ps(0.776f), _mm256_mul_ps(_mm256_set1_ps(0.224f), _mm256_andnot_ps(_mm256_set1_ps(-0.0), _inter2)));
+                return _mm256_mul_ps(_inter3, _inter2);
+            }
+            KAIXO_SIMD_CASE(AVX512F | AVX512DQ, 512, float) {
+                // value * (-(16.f * abs(value)) + 8.f)
+                auto _inter1 = _mm512_fnmadd_ps(_mm512_set1_ps(16.f), _mm512_andnot_ps(_mm512_set1_ps(-0.0), value), _mm512_set1_ps(8.f));
+                auto _inter2 = _mm512_mul_ps(_inter1, value);
+                // _inter2 * ((0.224f * abs(_inter2)) + 0.776f)
+                auto _inter3 = _mm512_fmadd_ps(_mm512_set1_ps(0.224f), _mm512_andnot_ps(_mm512_set1_ps(-0.0), _inter2), _mm512_set1_ps(0.776f));
+                return _mm512_mul_ps(_inter3, _inter2);
+            }
+            KAIXO_SIMD_BASE_TYPE(float) { 
+                auto approx = value * (8.0f - 16.0f * (value > 0 ? value : -value));
+                return approx * (0.776f + 0.224f * (approx > 0 ? approx : -approx));
+            }
+        }
+        
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL fmod1() const noexcept {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_sub_ps(value, _mm_trunc_ps(value));
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_sub_ps(value, _mm256_trunc_ps(value));
+            KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_sub_ps(value, _mm512_trunc_ps(value));
+            KAIXO_SIMD_BASE_TYPE(float) return value - static_cast<float>(static_cast<std::int64_t>(value));
         }
 
         // ------------------------------------------------
