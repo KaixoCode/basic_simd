@@ -6,7 +6,7 @@ int main() {
     using namespace kaixo;
     using enum instruction_set;
 
-    choose_simd_path([]<class simd_type>() {
+    choose_simd_path<float>([]<class simd_type>() {
 
         float data[16]{ 
             1, 1, 2, 2, 3, 4, 5, 6,

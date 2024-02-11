@@ -778,11 +778,12 @@ namespace kaixo {
 
     // ------------------------------------------------
     
+    template<class Ty>
     KAIXO_INLINE decltype(auto) choose_simd_path(auto lambda) {
-        if ((~supported_instruction_sets & simd_512::instructions) == 0) return lambda.operator()<simd_512>();
-        if ((~supported_instruction_sets & simd_256::instructions) == 0) return lambda.operator()<simd_256>();
-        if ((~supported_instruction_sets & simd_128::instructions) == 0) return lambda.operator()<simd_128>();
-        return lambda.operator()<basic_simd<float, 0, 0>>();
+        if ((~supported_instruction_sets & simd_512::instructions) == 0) return lambda.operator()<basic_simd<Ty, 512, simd_512::instructions>>();
+        if ((~supported_instruction_sets & simd_256::instructions) == 0) return lambda.operator()<basic_simd<Ty, 256, simd_256::instructions>>();
+        if ((~supported_instruction_sets & simd_128::instructions) == 0) return lambda.operator()<basic_simd<Ty, 128, simd_128::instructions>>();
+        return lambda.operator()<basic_simd<Ty, 0, 0>>();
     }
 
     // ------------------------------------------------
