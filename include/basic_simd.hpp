@@ -826,7 +826,7 @@ namespace kaixo {
 
     // ------------------------------------------------
 
-    using simd_128 = basic_simd<float, 128, instruction_set::SSE | instruction_set::SSE2 | instruction_set::SSE3 | instruction_set::SSE4_1>;
+    using simd_128 = basic_simd<float, 128, instruction_set::SSE | instruction_set::SSE2 | instruction_set::SSE3 | instruction_set::SSE4_1 | instruction_set::FMA>;
     using simd_256 = basic_simd<float, 256, simd_128::instructions | instruction_set::AVX | instruction_set::AVX2>;
     using simd_512 = basic_simd<float, 512, simd_256::instructions | instruction_set::AVX512F | instruction_set::AVX512DQ | instruction_set::AVX512VL>;
     
