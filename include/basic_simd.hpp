@@ -9,12 +9,17 @@
 #include <numeric>
 #include <cmath>
 #include <concepts>
+#include <cstdint>
 
 // ------------------------------------------------
 
 #include <intrin.h>
 #include <immintrin.h>
-#include <stdint.h>
+
+// GCC has cpuid.h include which defines __cpuid and __cpuidex
+#if defined(__GNUC__) || defined(__GNUG__)
+#include "cpuid.h"
+#endif
 
 // ------------------------------------------------
 
