@@ -221,6 +221,16 @@ namespace kaixo {
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_set1_epi32(std::bit_cast<int>(0xFFFFFFFF));
             KAIXO_SIMD_BASE return 1;
         }
+        
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL setincr() noexcept {
+            KAIXO_SIMD_CASE(SSE, 128, float) return setr(0, 1, 2, 3);
+            KAIXO_SIMD_CASE(AVX, 256, float) return setr(0, 1, 2, 3, 4, 5, 6, 7);
+            KAIXO_SIMD_CASE(AVX512F, 512, float) return setr(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+            KAIXO_SIMD_CASE(SSE2, 128, int) return setr(0, 1, 2, 3);
+            KAIXO_SIMD_CASE(AVX, 256, int) return setr(0, 1, 2, 3, 4, 5, 6, 7);
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return setr(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+            KAIXO_SIMD_BASE return 0;
+        }
 
         // ------------------------------------------------
 
@@ -858,6 +868,12 @@ namespace kaixo {
     // ------------------------------------------------
 
     template<class Type>
+    KAIXO_INLINE Type KAIXO_VECTORCALL setincr() noexcept {
+        if constexpr (!is_simd<Type>) return 0;
+        else return Type::setincr();
+    }
+    
+    template<class Type>
     KAIXO_INLINE Type KAIXO_VECTORCALL loadu(base_t<Type> const* ptr, std::size_t index) noexcept {
         if constexpr (!is_simd<Type>) return ptr[index];
         else return Type(ptr + index);
@@ -901,13 +917,13 @@ namespace kaixo {
     };
 
     template<class To, class Type>
-    KAIXO_INLINE To KAIXO_VECTORCALL cast(const Type& v) noexcept {
+    KAIXO_INLINE auto KAIXO_VECTORCALL cast(const Type& v) noexcept {
         if constexpr (!is_simd<Type>) return (To)v;
         else return v.template cast<To>();
     }
 
     template<class To, class Type>
-    KAIXO_INLINE To KAIXO_VECTORCALL reinterpret(const Type& v) noexcept {
+    KAIXO_INLINE auto KAIXO_VECTORCALL reinterpret(const Type& v) noexcept {
         if constexpr (!is_simd<Type>) return std::bit_cast<To>(v);
         else return v.template reinterpret<To>();
     }
