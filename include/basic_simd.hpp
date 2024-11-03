@@ -903,10 +903,21 @@ namespace kaixo {
         else return condition & value;
     }
 
-    template<class Type, std::invocable A, std::invocable B>
-    KAIXO_INLINE Type KAIXO_VECTORCALL iff(const Type& condition, A then, B otherwise) noexcept {
-        if constexpr (!is_simd<Type>) return condition ? then() : otherwise();
-        else return condition & then() | ~condition & otherwise();
+    template<class Type, class A, class B>
+    KAIXO_INLINE Type KAIXO_VECTORCALL iff(const Type& condition, const A& then, const B& otherwise) noexcept {
+        if constexpr (std::invocable<A> && std::invocable<B>) {
+            if constexpr (!is_simd<Type>) return condition ? then() : otherwise();
+            else return condition & then() | ~condition & otherwise();
+        } else if constexpr (std::invocable<A>) {
+            if constexpr (!is_simd<Type>) return condition ? then() : otherwise;
+            else return condition & then() | ~condition & otherwise;
+        } else if constexpr (std::invocable<B>) {
+            if constexpr (!is_simd<Type>) return condition ? then : otherwise();
+            else return condition & then | ~condition & otherwise();
+        } else {
+            if constexpr (!is_simd<Type>) return condition ? then : otherwise;
+            else return condition & then | ~condition & otherwise;
+        }
     }
 
     // Multiply with 1 or -1
