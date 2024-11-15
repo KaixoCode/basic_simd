@@ -120,6 +120,18 @@ namespace kaixo {
 
     template<> 
     struct underlying_simd<int, 512> : std::type_identity<__m512i> {};
+    
+    template<> 
+    struct underlying_simd<short, 0> : std::type_identity<short> {};
+    
+    template<> 
+    struct underlying_simd<short, 128> : std::type_identity<__m128i> {};
+
+    template<>
+    struct underlying_simd<short, 256> : std::type_identity<__m256i> {};
+
+    template<> 
+    struct underlying_simd<short, 512> : std::type_identity<__m512i> {};
 
     template<> 
     struct underlying_simd<float, 0> : std::type_identity<float> {};
@@ -210,6 +222,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_setzero_si128();
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_setzero_si256();
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_setzero_si512();
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_setzero_si128();
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_setzero_si256();
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_setzero_si512();
             KAIXO_SIMD_BASE return 0;
         }
         
@@ -220,6 +235,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_set1_epi32(std::bit_cast<int>(0xFFFFFFFF));
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_set1_epi32(std::bit_cast<int>(0xFFFFFFFF));
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_set1_epi32(std::bit_cast<int>(0xFFFFFFFF));
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_set1_epi16(std::bit_cast<short>(0xFFFF));
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_set1_epi16(std::bit_cast<short>(0xFFFF));
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_set1_epi16(std::bit_cast<short>(0xFFFF));
             KAIXO_SIMD_BASE return 1;
         }
         
@@ -230,6 +248,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return setr(0, 1, 2, 3);
             KAIXO_SIMD_CASE(AVX, 256, int) return setr(0, 1, 2, 3, 4, 5, 6, 7);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return setr(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return setr(0, 1, 2, 3, 4, 5, 6, 7);
+            KAIXO_SIMD_CASE(AVX, 256, short) return setr(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return setr(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31);
             KAIXO_SIMD_BASE return 0;
         }
 
@@ -247,6 +268,7 @@ namespace kaixo {
         KAIXO_INLINE static basic_simd KAIXO_VECTORCALL setr(base a1, base a2, base a3, base a4, base a5, base a6, base a7, base a8) noexcept {
             KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_setr_ps(a1, a2, a3, a4, a5, a6, a7, a8); 
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_setr_epi32(a1, a2, a3, a4, a5, a6, a7, a8);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_setr_epi16(a1, a2, a3, a4, a5, a6, a7, a8);
         }
             
         KAIXO_INLINE static basic_simd KAIXO_VECTORCALL setr(
@@ -254,6 +276,15 @@ namespace kaixo {
                 base a9, base a10, base a11, base a12, base a13, base a14, base a15, base a16) noexcept {
             KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_setr_ps(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16); 
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_setr_epi32(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16); 
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_setr_epi16(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16); 
+        }
+        
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL setr(
+                base  a1, base  a2, base  a3, base  a4, base  a5, base  a6, base  a7, base  a8,
+                base  a9, base a10, base a11, base a12, base a13, base a14, base a15, base a16,
+                base a17, base a18, base a19, base a20, base a21, base a22, base a23, base a24,
+                base a25, base a26, base a27, base a28, base a29, base a30, base a31, base a32) noexcept {
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_setr_epi16(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32);
         }
 
         // ------------------------------------------------
@@ -265,6 +296,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_set1_epi32(val);
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_set1_epi32(val);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_set1_epi32(val);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_set1_epi16(val);
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_set1_epi16(val);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_set1_epi16(val);
             KAIXO_SIMD_BASE return val;
         }
 
@@ -278,6 +312,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_load_si128((__m128i const*)addr);
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_load_si256((__m256i const*)addr);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_load_si512((__m512i const*)addr);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_load_si128((__m128i const*)addr);
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_load_si256((__m256i const*)addr);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_load_si512((__m512i const*)addr);
             KAIXO_SIMD_BASE return addr[0];
         }
 
@@ -288,6 +325,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_loadu_si128((__m128i const*)addr);
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_loadu_si256((__m256i const*)addr);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_loadu_si512((__m512i const*)addr);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_loadu_si128((__m128i const*)addr);
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_loadu_si256((__m256i const*)addr);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_loadu_si512((__m512i const*)addr);
             KAIXO_SIMD_BASE return addr[0];
         }
 
@@ -300,6 +340,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_store_si128((__m128i*)addr, value);
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_store_si256((__m256i*)addr, value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_store_si512((__m512i*)addr, value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_store_si128((__m128i*)addr, value);
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_store_si256((__m256i*)addr, value);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_store_si512((__m512i*)addr, value);
             KAIXO_SIMD_BASE *addr = value;
         }
 
@@ -310,6 +353,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_storeu_si128((__m128i*)addr, value);
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_storeu_si256((__m256i*)addr, value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_storeu_si512((__m512i*)addr, value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_storeu_si128((__m128i*)addr, value);
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_storeu_si256((__m256i*)addr, value);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_storeu_si512((__m512i*)addr, value);
             KAIXO_SIMD_BASE *addr = value;
         }
 
@@ -325,6 +371,11 @@ namespace kaixo {
         KAIXO_INLINE basic_simd(simd_type val) : value(val) {}
         KAIXO_INLINE explicit basic_simd(bool val) : value(val ? setone().value : setzero().value) {}
 
+        template<std::integral Ty>
+        KAIXO_INLINE basic_simd(const basic_simd<Ty, bits, instructions>& other) : value(other.value) {}
+        template<std::integral Ty>
+        KAIXO_INLINE basic_simd(basic_simd<Ty, bits, instructions>&& other) : value(std::move(other.value)) {}
+
         template<class ...Args> requires (sizeof...(Args) == elements && (std::same_as<base, Args> && ...))
         KAIXO_INLINE basic_simd(Args ... args) : value(setr(args...)) {}
 
@@ -337,6 +388,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_add_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_add_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_add_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_add_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_add_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_add_epi16(a.value, b.value);
             KAIXO_SIMD_BASE return a.value + b.value;
         }
 
@@ -347,6 +401,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_sub_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_sub_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_sub_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_sub_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_sub_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_sub_epi16(a.value, b.value);
             KAIXO_SIMD_BASE return a.value - b.value;
         }
             
@@ -357,6 +414,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE4_1, 128, int) return _mm_mullo_epi32(a. value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_mullo_epi32(a. value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_mullo_epi32(a. value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_mullo_epi16(a. value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_mullo_epi16(a. value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_mullo_epi16(a. value, b.value);
             KAIXO_SIMD_BASE return a.value * b.value;
         }
             
@@ -367,6 +427,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE, 128, int) return _mm_div_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_div_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_div_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE, 128, int) return _mm_div_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_div_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_div_epi16(a.value, b.value);
             KAIXO_SIMD_BASE return a.value / b.value;
         }
             
@@ -377,6 +440,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_and_si128(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_and_si256(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_and_si512(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_and_si128(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_and_si256(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_and_si512(a.value, b.value);
             KAIXO_SIMD_BASE return a.value * b.value; // & is used with masks, so in base case multiply (0/1 bool)
         }
             
@@ -387,6 +453,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_or_si128(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_or_si256(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_or_si512(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_or_si128(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_or_si256(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_or_si512(a.value, b.value);
             KAIXO_SIMD_BASE return a.value + b.value; // | is used with masks, so in base case add (either one should be 0)
         }
             
@@ -397,6 +466,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_xor_si128(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_xor_si256(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_xor_si512(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_xor_si128(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_xor_si256(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_xor_si512(a.value, b.value);
             KAIXO_SIMD_BASE_TYPE(int) return a.value ^ b.value;
         }
 
@@ -409,7 +481,10 @@ namespace kaixo {
             KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_from_mask_ps(_mm512_cmpeq_ps_mask(a.value, b.value));
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_cmpeq_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_cmpeq_epi32(a.value, b.value);
-            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_cmpeq_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_from_mask_epi32(_mm512_cmpeq_epi32_mask(a.value, b.value));
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_cmpeq_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_cmpeq_epi16(a.value, b.value);
+            //KAIXO_SIMD_CASE(AVX512F, 512, short) 
             KAIXO_SIMD_BASE return a.value == b.value;
         }
             
@@ -421,6 +496,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE_ALL(128, int) return ~(a == b);
             KAIXO_SIMD_CASE_ALL(256, int) return ~(a == b);
             KAIXO_SIMD_CASE_ALL(512, int) return ~(a == b);
+            KAIXO_SIMD_CASE_ALL(128, short) return ~(a == b);
+            KAIXO_SIMD_CASE_ALL(256, short) return ~(a == b);
+            KAIXO_SIMD_CASE_ALL(512, short) return ~(a == b);
             KAIXO_SIMD_BASE return a.value != b.value;
         }
             
@@ -432,6 +510,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_cmpgt_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_cmpgt_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_cmpgt_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_cmpgt_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_cmpgt_epi16(a.value, b.value);
+            //KAIXO_SIMD_CASE(AVX512F, 512, short)
             KAIXO_SIMD_BASE return a.value > b.value;
         }
             
@@ -443,6 +524,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_cmplt_epi32(a.value, b.value);
             KAIXO_SIMD_CASE_ALL(256, int) return (b > a) | (b > a);
             KAIXO_SIMD_CASE_ALL(512, int) return (b > a) | (b > a);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_cmplt_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE_ALL(256, short) return (b > a) | (b > a);
+            KAIXO_SIMD_CASE_ALL(512, short) return (b > a) | (b > a);
             KAIXO_SIMD_BASE return a.value < b.value;
         }
             
@@ -454,6 +538,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE_ALL(128, int) return (a > b) | (a == b);
             KAIXO_SIMD_CASE_ALL(256, int) return (a > b) | (a == b);
             KAIXO_SIMD_CASE_ALL(512, int) return (a > b) | (a == b);
+            KAIXO_SIMD_CASE_ALL(128, short) return (a > b) | (a == b);
+            KAIXO_SIMD_CASE_ALL(256, short) return (a > b) | (a == b);
+            KAIXO_SIMD_CASE_ALL(512, short) return (a > b) | (a == b);
             KAIXO_SIMD_BASE return a.value >= b.value;
         }
             
@@ -465,6 +552,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE_ALL(128, int) return (a < b) | (a == b);
             KAIXO_SIMD_CASE_ALL(256, int) return (a < b) | (a == b);
             KAIXO_SIMD_CASE_ALL(512, int) return (a < b) | (a == b);
+            KAIXO_SIMD_CASE_ALL(128, short) return (a < b) | (a == b);
+            KAIXO_SIMD_CASE_ALL(256, short) return (a < b) | (a == b);
+            KAIXO_SIMD_CASE_ALL(512, short) return (a < b) | (a == b);
             KAIXO_SIMD_BASE return a.value <= b.value;
         }
 
@@ -474,6 +564,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(AVX2, 128, int) return _mm_sllv_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_sllv_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_sllv_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW | AVX512VL, 128, short) return _mm_sllv_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW | AVX512VL, 256, short) return _mm256_sllv_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_sllv_epi16(a.value, b.value);
             KAIXO_SIMD_BASE_TYPE(int) return a.value << b.value;
         }
 
@@ -482,6 +575,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_slli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_slli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_slli_epi32(a.value, static_cast<unsigned int>(b));
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_slli_epi16(a.value, static_cast<int>(b));
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_slli_epi16(a.value, static_cast<int>(b));
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_slli_epi16(a.value, static_cast<unsigned int>(b));
             KAIXO_SIMD_BASE_TYPE(int) return a.value << b;
         }
 
@@ -489,6 +585,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(AVX2, 128, int) return _mm_srlv_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_srlv_epi32(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_srlv_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW | AVX512VL, 128, short) return _mm_srlv_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW | AVX512VL, 256, short) return _mm256_srlv_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_srlv_epi16(a.value, b.value);
             KAIXO_SIMD_BASE_TYPE(int) return a.value >> b.value;
         }
 
@@ -497,6 +596,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_srli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_srli_epi32(a.value, static_cast<int>(b));
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_srli_epi32(a.value, static_cast<unsigned int>(b));
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_srli_epi16(a.value, static_cast<int>(b));
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_srli_epi16(a.value, static_cast<int>(b));
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_srli_epi16(a.value, static_cast<int>(b));
             KAIXO_SIMD_BASE_TYPE(int) return a.value >> b;
         }
 
@@ -509,6 +611,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_xor_si128(value, _mm_set1_epi32(std::bit_cast<int>(0xFFFFFFFF)));
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_xor_si256(value, _mm256_set1_epi32(std::bit_cast<int>(0xFFFFFFFF)));
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_xor_si512(value, _mm512_set1_epi32(std::bit_cast<int>(0xFFFFFFFF)));
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_xor_si128(value, _mm_set1_epi32(std::bit_cast<int>(0xFFFFFFFF)));
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_xor_si256(value, _mm256_set1_epi32(std::bit_cast<int>(0xFFFFFFFF)));
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_xor_si512(value, _mm512_set1_epi32(std::bit_cast<int>(0xFFFFFFFF)));
             KAIXO_SIMD_BASE return !value;
         }
 
@@ -586,6 +691,9 @@ namespace kaixo {
             KAIXO_SIMD_CASE_ALL(128, int) return _sum_general(value);
             KAIXO_SIMD_CASE_ALL(256, int) return _sum_general(value);
             KAIXO_SIMD_CASE_ALL(512, int) return _sum_general(value);
+            KAIXO_SIMD_CASE_ALL(128, short) return _sum_general(value);
+            KAIXO_SIMD_CASE_ALL(256, short) return _sum_general(value);
+            KAIXO_SIMD_CASE_ALL(512, short) return _sum_general(value);
             KAIXO_SIMD_BASE return value;
         }
 
@@ -846,10 +954,13 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL max_epi16(const basic_simd& a, const basic_simd& b) noexcept {
+        KAIXO_INLINE static basic_simd<short, bits, instructions> KAIXO_VECTORCALL max_epi16(const basic_simd& a, const basic_simd& b) noexcept {
             KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_max_epi16(a.value, b.value);
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_max_epi16(a.value, b.value);
             KAIXO_SIMD_CASE(AVX512BW, 512, int) return _mm512_max_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_max_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, short) return _mm256_max_epi16(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512BW, 512, short) return _mm512_max_epi16(a.value, b.value);
             KAIXO_SIMD_BASE_TYPE(int) {
                 const int a1 = a.value & 0x0000FFFF;
                 const int a2 = a.value & 0xFFFF0000;
@@ -906,9 +1017,15 @@ namespace kaixo {
     template<class Ty> using base_t = typename base<Ty>::type;
 
     // ------------------------------------------------
+    
+    template<class Ty, class To> struct change_base : std::type_identity<To> {};
+    template<is_simd Ty, class To> struct change_base<Ty, To> : std::type_identity<basic_simd<To, Ty::bits, Ty::instructions>> {};
+    template<class Ty, class To> using change_base_t = typename change_base<Ty, To>::type;
+
+    // ------------------------------------------------
 
     template<class Type>
-    KAIXO_INLINE Type KAIXO_VECTORCALL max_epi16(const Type& a, const Type& b) noexcept { 
+    KAIXO_INLINE auto KAIXO_VECTORCALL max_epi16(const Type& a, const Type& b) noexcept { 
         if constexpr (std::same_as<Type, int>) {
             const int a1 = a & 0x0000FFFF;
             const int a2 = a & 0xFFFF0000;
