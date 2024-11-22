@@ -377,7 +377,7 @@ namespace kaixo {
         KAIXO_INLINE basic_simd(basic_simd<Ty, bits, instructions>&& other) : value(std::move(other.value)) {}
 
         template<class ...Args> requires (sizeof...(Args) == elements && (std::same_as<base, Args> && ...))
-        KAIXO_INLINE basic_simd(Args ... args) : value(setr(args...)) {}
+        KAIXO_INLINE basic_simd(Args ... args) : value(setr(args...).value) {}
 
         // ------------------------------------------------
 
