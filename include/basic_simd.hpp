@@ -73,6 +73,7 @@ namespace kaixo {
         if ((ebx & (1 <<  5)) != 0) result |= instruction_set::AVX2;
         if ((ebx & (1 << 16)) != 0) result |= instruction_set::AVX512F;
         if ((ebx & (1 << 17)) != 0) result |= instruction_set::AVX512DQ;
+        if ((ebx & (1 << 30)) != 0) result |= instruction_set::AVX512BW;
         if ((ebx & (1 << 31)) != 0) result |= instruction_set::AVX512VL;
         return result;
     }
@@ -870,14 +871,14 @@ namespace kaixo {
         KAIXO_INLINE basic_simd<float, Bits, Instructions> KAIXO_VECTORCALL gather(float const* data) const noexcept {
             KAIXO_SIMD_CASE(AVX2, 128, int) return _mm_i32gather_ps(data, value, sizeof(float));
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_i32gather_ps(data, value, sizeof(float));
-            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_i32gather_ps(data, value, sizeof(float));
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_i32gather_ps(value, data, sizeof(float));
             KAIXO_SIMD_BASE_TYPE(int) return data[value];
         }
 
         KAIXO_INLINE basic_simd<int, Bits, Instructions> KAIXO_VECTORCALL gather(int const* data) const noexcept {
             KAIXO_SIMD_CASE(AVX2, 128, int) return _mm_i32gather_epi32(data, value, sizeof(int));
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_i32gather_epi32(data, value, sizeof(int));
-            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_i32gather_epi32(data, value, sizeof(int));
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_i32gather_epi32(value, data, sizeof(int));
             KAIXO_SIMD_BASE_TYPE(int) return data[value];
         }
 
