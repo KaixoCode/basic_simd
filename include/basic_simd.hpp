@@ -908,8 +908,8 @@ namespace kaixo {
         // Requires -0.5 < value < 0.5, outputs sin(value * 2 * pi)
         KAIXO_INLINE basic_simd KAIXO_VECTORCALL fast_normalized_sin() const noexcept {
             KAIXO_SIMD_CASE(SSE | FMA, 128, float) {
-                // value * (-(16.f * abs(value)) + 8.f)
-                auto _inter1 = _mm_fnmadd_ps(_mm_set1_ps(16.f), _mm_andnot_ps(_mm_set1_ps(-0.0), value), _mm_set1_ps(8.f));
+                // value * ((-16.f * abs(value)) + 8.f)
+                auto _inter1 = _mm_fmadd_ps(_mm_set1_ps(-16.f), _mm_andnot_ps(_mm_set1_ps(-0.0), value), _mm_set1_ps(8.f));
                 auto _inter2 = _mm_mul_ps(_inter1, value);
                 // _inter2 * ((0.224f * abs(_inter2)) + 0.776f)
                 auto _inter3 = _mm_fmadd_ps(_mm_set1_ps(0.224f), _mm_andnot_ps(_mm_set1_ps(-0.0), _inter2), _mm_set1_ps(0.776f));
@@ -924,8 +924,8 @@ namespace kaixo {
                 return _mm_mul_ps(_inter3, _inter2);
             }
             KAIXO_SIMD_CASE(AVX | FMA, 256, float) {
-                // value * (-(16.f * abs(value)) + 8.f)
-                auto _inter1 = _mm256_fnmadd_ps(_mm256_set1_ps(16.f), _mm256_andnot_ps(_mm256_set1_ps(-0.0), value), _mm256_set1_ps(8.f));
+                // value * ((-16.f * abs(value)) + 8.f)
+                auto _inter1 = _mm256_fmadd_ps(_mm256_set1_ps(-16.f), _mm256_andnot_ps(_mm256_set1_ps(-0.0), value), _mm256_set1_ps(8.f));
                 auto _inter2 = _mm256_mul_ps(_inter1, value);
                 // _inter2 * ((0.224f * abs(_inter2)) + 0.776f)
                 auto _inter3 = _mm256_fmadd_ps(_mm256_set1_ps(0.224f), _mm256_andnot_ps(_mm256_set1_ps(-0.0), _inter2), _mm256_set1_ps(0.776f));
@@ -940,8 +940,8 @@ namespace kaixo {
                 return _mm256_mul_ps(_inter3, _inter2);
             }
             KAIXO_SIMD_CASE(AVX512F | AVX512DQ, 512, float) {
-                // value * (-(16.f * abs(value)) + 8.f)
-                auto _inter1 = _mm512_fnmadd_ps(_mm512_set1_ps(16.f), _mm512_andnot_ps(_mm512_set1_ps(-0.0), value), _mm512_set1_ps(8.f));
+                // value * ((-16.f * abs(value)) + 8.f)
+                auto _inter1 = _mm512_fmadd_ps(_mm512_set1_ps(-16.f), _mm512_andnot_ps(_mm512_set1_ps(-0.0), value), _mm512_set1_ps(8.f));
                 auto _inter2 = _mm512_mul_ps(_inter1, value);
                 // _inter2 * ((0.224f * abs(_inter2)) + 0.776f)
                 auto _inter3 = _mm512_fmadd_ps(_mm512_set1_ps(0.224f), _mm512_andnot_ps(_mm512_set1_ps(-0.0), _inter2), _mm512_set1_ps(0.776f));
