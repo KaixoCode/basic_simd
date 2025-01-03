@@ -287,6 +287,26 @@ namespace kaixo {
                 base a25, base a26, base a27, base a28, base a29, base a30, base a31, base a32) noexcept {
             KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_setr_epi16(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32);
         }
+        
+        // ------------------------------------------------
+
+        template<base Default = 0, std::same_as<base> ...Tys> requires (sizeof...(Tys) <= elements)
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL setfirst(Tys... values) noexcept {
+            using index_sequence = std::make_index_sequence<elements - sizeof...(Tys)>;
+
+            return [&]<std::size_t ...Is>(std::index_sequence<Is...>) {
+                return setr(values..., (Is, Default)...);
+            }(index_sequence{});
+        }
+        
+        template<base Default = 0, std::same_as<base> ...Tys> requires (sizeof...(Tys) <= elements)
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL setlast(Tys... values) noexcept {
+            using index_sequence = std::make_index_sequence<elements - sizeof...(Tys)>;
+
+            return [&]<std::size_t ...Is>(std::index_sequence<Is...>) {
+                return setr((Is, Default)..., values...);
+            }(index_sequence{});
+        }
 
         // ------------------------------------------------
 
@@ -1065,6 +1085,12 @@ namespace kaixo {
     KAIXO_INLINE Type KAIXO_VECTORCALL setincr() noexcept {
         if constexpr (!is_simd<Type>) return 0;
         else return Type::setincr();
+    }
+    
+    template<class Type, auto Default = 0, class ...Tys>
+    KAIXO_INLINE Type KAIXO_VECTORCALL setfirst(Tys... values) noexcept {
+        if constexpr (!is_simd<Type>) return (values, ...);
+        else return Type::template setfirst<Default>(values...);
     }
     
     template<class Type>
