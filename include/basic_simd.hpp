@@ -69,7 +69,7 @@ namespace kaixo {
         return result;
     }
     
-    KAIXO_INLINE instruction_sets from_extended_flags(instruction_sets result, std::uint32_t ebx, std::uint32_t ecx, std::uint32_t edx) {
+    KAIXO_INLINE instruction_sets from_extended_flags(instruction_sets result, std::uint32_t ebx, std::uint32_t /*ecx*/, std::uint32_t /*edx*/) {
         if ((ebx & (1 <<  5)) != 0) result |= instruction_set::AVX2;
         if ((ebx & (1 << 16)) != 0) result |= instruction_set::AVX512F;
         if ((ebx & (1 << 17)) != 0) result |= instruction_set::AVX512DQ;
