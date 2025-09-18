@@ -12,8 +12,15 @@
 
 // ------------------------------------------------
 
+#ifdef _MSC_VER
+#define KAIXO_VECTORCALL __vectorcall
+#define KAIXO_INLINE __forceinline
+#endif 
+
 #if defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
 #define ARM_ARCHITECTURE
+#define KAIXO_VECTORCALL
+#define KAIXO_INLINE
 //#include <immintrin.h>
 //#include "cpuid.h"
 #endif
@@ -21,11 +28,6 @@
 #ifndef ARM_ARCHITECTURE
 #include <immintrin.h>
 #endif
-
-// ------------------------------------------------
-
-#define KAIXO_VECTORCALL __vectorcall
-#define KAIXO_INLINE __forceinline
 
 // ------------------------------------------------
 
