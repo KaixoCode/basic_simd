@@ -1078,15 +1078,15 @@ namespace kaixo {
 #ifdef ARM_ARCHITECTURE
     template<class Ty>
     KAIXO_INLINE decltype(auto) choose_simd_path(auto lambda) {
-        return lambda.operator()<Ty>();
+        return lambda.template operator()<Ty>();
     }
 #else
     template<class Ty>
     KAIXO_INLINE decltype(auto) choose_simd_path(auto lambda) {
-        if ((~supported_instruction_sets & simd_512::instructions) == 0) return lambda.operator()<basic_simd<Ty, 512, simd_512::instructions>>();
-        if ((~supported_instruction_sets & simd_256::instructions) == 0) return lambda.operator()<basic_simd<Ty, 256, simd_256::instructions>>();
-        if ((~supported_instruction_sets & simd_128::instructions) == 0) return lambda.operator()<basic_simd<Ty, 128, simd_128::instructions>>();
-        return lambda.operator()<Ty>();
+        if ((~supported_instruction_sets & simd_512::instructions) == 0) return lambda.template operator()<basic_simd<Ty, 512, simd_512::instructions>>();
+        if ((~supported_instruction_sets & simd_256::instructions) == 0) return lambda.template operator()<basic_simd<Ty, 256, simd_256::instructions>>();
+        if ((~supported_instruction_sets & simd_128::instructions) == 0) return lambda.template operator()<basic_simd<Ty, 128, simd_128::instructions>>();
+        return lambda.template operator()<Ty>();
     }
 #endif
 
