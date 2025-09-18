@@ -8,12 +8,10 @@
 #include <type_traits>
 #include <numeric>
 #include <cmath>
-#include <concepts>
 #include <cstdint>
 
 // ------------------------------------------------
 
-#include <intrin.h>
 #include <immintrin.h>
 
 // GCC has cpuid.h include which defines __cpuid and __cpuidex
