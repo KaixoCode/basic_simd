@@ -12,11 +12,14 @@
 
 // ------------------------------------------------
 
-#include <immintrin.h>
+#if defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
+#define ARM_ARCHITECTURE
+//#include <immintrin.h>
+//#include "cpuid.h"
+#endif
 
-// GCC has cpuid.h include which defines __cpuid and __cpuidex
-#if defined(__GNUC__) || defined(__GNUG__)
-#include "cpuid.h"
+#ifndef ARM_ARCHITECTURE
+#include <immintrin.h>
 #endif
 
 // ------------------------------------------------
@@ -57,6 +60,46 @@ namespace kaixo {
 
     // ------------------------------------------------
     
+#ifdef ARM_ARCHITECTURE
+
+    // ------------------------------------------------
+
+    inline const instruction_sets supported_instruction_sets = 0;
+
+    template<class Ty, std::size_t Bits>
+    struct underlying_simd : std::type_identity<Ty> {};
+
+    // ------------------------------------------------
+
+    template<class Ty, std::size_t Bits, instruction_sets Instructions>
+    struct basic_simd {
+
+        // ------------------------------------------------
+
+        using enum instruction_set;
+
+        // ------------------------------------------------
+
+        constexpr static std::size_t bits = Bits;
+        constexpr static std::size_t bytes = Bits / 8;
+        constexpr static std::size_t elements = bytes / sizeof(Ty);
+        constexpr static instruction_sets instructions = Instructions;
+
+        // ------------------------------------------------
+
+        using base = Ty;
+        using simd_type = Ty;
+
+        // ------------------------------------------------
+
+    };
+
+    // ------------------------------------------------
+
+#else
+
+    // ------------------------------------------------
+
     KAIXO_INLINE instruction_sets from_flags(instruction_sets result, std::uint32_t ecx, std::uint32_t edx) {
         if ((edx & (1 << 25)) != 0) result |= instruction_set::SSE;
         if ((edx & (1 << 26)) != 0) result |= instruction_set::SSE2;
@@ -102,6 +145,7 @@ namespace kaixo {
     }
 
     inline const instruction_sets supported_instruction_sets = find_supported_instruction_sets();
+
 
     // ------------------------------------------------
 
@@ -1003,6 +1047,7 @@ namespace kaixo {
     // ------------------------------------------------
 
 #undef KAIXO_SIMD_CALL
+#endif
 
     // ------------------------------------------------
 
@@ -1028,13 +1073,20 @@ namespace kaixo {
 
     // ------------------------------------------------
     
+#ifdef ARM_ARCHITECTURE
+    template<class Ty>
+    KAIXO_INLINE decltype(auto) choose_simd_path(auto lambda) {
+        return lambda.operator()<Ty>();
+    }
+#else
     template<class Ty>
     KAIXO_INLINE decltype(auto) choose_simd_path(auto lambda) {
         if ((~supported_instruction_sets & simd_512::instructions) == 0) return lambda.operator()<basic_simd<Ty, 512, simd_512::instructions>>();
         if ((~supported_instruction_sets & simd_256::instructions) == 0) return lambda.operator()<basic_simd<Ty, 256, simd_256::instructions>>();
         if ((~supported_instruction_sets & simd_128::instructions) == 0) return lambda.operator()<basic_simd<Ty, 128, simd_128::instructions>>();
-        return lambda.operator()<basic_simd<Ty, 0, 0>>();
+        return lambda.operator()<Ty>();
     }
+#endif
 
     // ------------------------------------------------
 
