@@ -801,6 +801,15 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL sign() const noexcept {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_or_ps(_mm_set1_ps(1.f), _mm_and_ps(value, _mm_set1_ps(-0.f)));
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_or_ps(_mm256_set1_ps(1.f), _mm256_and_ps(value, _mm256_set1_ps(-0.f)));
+            KAIXO_SIMD_CASE(AVX512F | AVX512DQ, 512, float) return _mm512_or_ps(_mm512_set1_ps(1.f), _mm512_and_ps(value, _mm512_set1_ps(-0.f)));
+            KAIXO_SIMD_BASE_TYPE(float) return value < 0 ? -1 : 1;
+        }
+
+        // ------------------------------------------------
+
         KAIXO_INLINE basic_simd KAIXO_VECTORCALL log() const noexcept {
             KAIXO_SIMD_CASE(SSE, 128, float) return _mm_log_ps(value);
             KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_log_ps(value);
