@@ -691,6 +691,28 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL min(const basic_simd& a, const basic_simd& b) noexcept {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_min_ps(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_min_ps(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_min_ps(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE4_1, 128, int) return _mm_min_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_min_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_min_epi32(a.value, b.value);
+            KAIXO_SIMD_BASE return a.value < b.value ? a.value : b.value;
+        }
+
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL max(const basic_simd& a, const basic_simd& b) noexcept {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_max_ps(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_max_ps(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_max_ps(a.value, b.value);
+            KAIXO_SIMD_CASE(SSE4_1, 128, int) return _mm_max_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_max_epi32(a.value, b.value);
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_max_epi32(a.value, b.value);
+            KAIXO_SIMD_BASE return a.value > b.value ? a.value : b.value;
+        }
+
+        // ------------------------------------------------
+
         // (a * b) + c
         KAIXO_INLINE static basic_simd KAIXO_VECTORCALL fmadd(const basic_simd& a, const basic_simd& b, const basic_simd& c) noexcept {
             KAIXO_SIMD_CASE(FMA, 128, float) return _mm_fmadd_ps(a.value, b.value, c.value);
@@ -1124,6 +1146,22 @@ namespace kaixo {
         } else {
             return Type::max_epi16(a, b);
         }
+    }
+
+    // ------------------------------------------------
+    
+    template<class A, class B>
+    KAIXO_INLINE decltype(auto) KAIXO_VECTORCALL simd_min(const A& a, const B& b) noexcept {
+        using SimdType = std::conditional_t<is_simd<A>, A, B>;
+        if constexpr (!is_simd<SimdType>) return a < b ? a : b;
+        else return SimdType::min(a, b);
+    }
+    
+    template<class A, class B>
+    KAIXO_INLINE decltype(auto) KAIXO_VECTORCALL simd_max(const A& a, const B& b) noexcept {
+        using SimdType = std::conditional_t<is_simd<A>, A, B>;
+        if constexpr (!is_simd<SimdType>) return a > b ? a : b;
+        else return SimdType::max(a, b);
     }
 
     // ------------------------------------------------
