@@ -13,13 +13,11 @@ int main() {
             1, 1, 4, 2, 5, 4, 7, 6,
         };
 
-        simd_type value1 = data;
-        simd_type value2 = data + simd_type::elements;
-
-        value1.instructions;
+        simd_type value1 = load<simd_type>(data, 0);
+        simd_type value2 = load<simd_type>(data, simd_elements_v<simd_type>);
 
         auto res = value1 == value2;
-        auto val = res.iff([] { return 1.f; }, [] { return 0.f; });
+        auto val = iff(res, [] { return 1.f; }, [] { return 0.f; });
 
         return 0;
     });

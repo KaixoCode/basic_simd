@@ -1134,6 +1134,12 @@ namespace kaixo {
     template<class Ty, class To> using change_base_t = typename change_base<Ty, To>::type;
 
     // ------------------------------------------------
+    
+    template<class Ty> struct simd_elements : std::integral_constant<std::size_t, 1> {};
+    template<is_simd Ty> struct simd_elements<Ty> : std::integral_constant<std::size_t, Ty::elements> {};
+    template<class Ty> constexpr std::size_t simd_elements_v = simd_elements<Ty>::value;
+
+    // ------------------------------------------------
 
     template<class Type>
     KAIXO_INLINE auto KAIXO_VECTORCALL max_epi16(const Type& a, const Type& b) noexcept { 
