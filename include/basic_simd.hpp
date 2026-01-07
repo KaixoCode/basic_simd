@@ -432,17 +432,21 @@ namespace kaixo {
 
         KAIXO_INLINE basic_simd() : value() {}
         KAIXO_INLINE basic_simd(base const* addr) : value(loadu(addr).value) {}
-        KAIXO_INLINE basic_simd(base val) requires (!std::same_as<simd_type, base>) : value(set1(val).value) {}
         KAIXO_INLINE basic_simd(simd_type val) : value(val) {}
         KAIXO_INLINE explicit basic_simd(bool val) : value(val ? setone().value : setzero().value) {}
+
+        template<class Arg> 
+            requires std::convertible_to<Arg, base>
+        KAIXO_INLINE basic_simd(Arg val) : value(set1(static_cast<base>(val)).value) {}
 
         template<std::integral Ty>
         KAIXO_INLINE basic_simd(const basic_simd<Ty, bits, instructions>& other) : value(other.value) {}
         template<std::integral Ty>
         KAIXO_INLINE basic_simd(basic_simd<Ty, bits, instructions>&& other) : value(std::move(other.value)) {}
 
-        template<class ...Args> requires (sizeof...(Args) == elements && (std::same_as<base, Args> && ...))
-        KAIXO_INLINE basic_simd(Args ... args) : value(setr(args...).value) {}
+        template<class ...Args> 
+            requires (sizeof...(Args) == elements && (std::convertible_to<Args, base> && ...))
+        KAIXO_INLINE basic_simd(Args ... args) : value(setr(static_cast<base>(args)...).value) {}
 
         // ------------------------------------------------
 
