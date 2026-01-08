@@ -689,7 +689,7 @@ namespace kaixo {
         KAIXO_INLINE basic_simd KAIXO_VECTORCALL operator-() const noexcept {
             KAIXO_SIMD_CASE(SSE, 128, float) return _mm_xor_ps(value, _mm_set1_ps(-0.f));
             KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_xor_ps(value, _mm256_set1_ps(-0.f));
-            KAIXO_SIMD_CASE(AVX512DQ, 512, float) return _mm512_xor_ps(value, _mm512_set1_ps(0.f));
+            KAIXO_SIMD_CASE(AVX512DQ, 512, float) return _mm512_xor_ps(value, _mm512_set1_ps(-0.f));
             KAIXO_SIMD_BASE return 0 - *this;
         }
 
