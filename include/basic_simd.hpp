@@ -796,6 +796,17 @@ namespace kaixo {
         }
 
         // ------------------------------------------------
+        
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL reverse() const noexcept {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_shuffle_ps(value, value, _MM_SHUFFLE(0, 1, 2, 3));
+            KAIXO_SIMD_CASE(AVX, 256, float) {
+                auto v = _mm256_permute2f128_ps(value, value, 0x01);
+                return _mm256_shuffle_ps(v, v, _MM_SHUFFLE(0, 1, 2, 3));
+            }
+            KAIXO_SIMD_BASE_TYPE(float) return value;
+        }
+
+        // ------------------------------------------------
 
         KAIXO_INLINE basic_simd KAIXO_VECTORCALL trunc() const noexcept {
             KAIXO_SIMD_CASE(SSE, 128, float) return _mm_trunc_ps(value);
