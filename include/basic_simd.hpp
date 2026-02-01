@@ -396,6 +396,12 @@ namespace kaixo {
             KAIXO_SIMD_BASE return addr[0];
         }
 
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL loadr(base const* addr)  {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_loadr_ps(addr);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_setr_ps(addr[7], addr[6], addr[5], addr[4], addr[3], addr[2], addr[1], addr[0]);
+            KAIXO_SIMD_BASE return addr[0];
+        }
+
         KAIXO_INLINE static basic_simd KAIXO_VECTORCALL loadu(base const* addr)  {
             KAIXO_SIMD_CASE(SSE, 128, float) return _mm_loadu_ps(addr);
             KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_loadu_ps(addr);
