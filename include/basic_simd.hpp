@@ -1171,7 +1171,7 @@ namespace kaixo {
                     _mm256_xor_si256(_mm256_xor_si256(s1, s0),
                         _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
                 return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(state.part2, s0)), 
-                    _mm256_set1_ps(std::numeric_limits<std::uint32_t>::max()));
+                    _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::uint32_t>::max())));
             }
         }
 
