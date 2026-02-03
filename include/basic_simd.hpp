@@ -1130,6 +1130,53 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL _random_value1() const  {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_set1_ps(std::bit_cast<float>(0xFFFFFFFF));
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_set1_ps(std::bit_cast<float>(0xFFFFFFFF));
+            KAIXO_SIMD_CASE(AVX512DQ, 512, float) return _mm512_set1_ps(std::bit_cast<float>(0xFFFFFFFF));
+            KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_set1_epi32(std::bit_cast<int>(0xFFFFFFFF));
+            KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_set1_epi32(std::bit_cast<int>(0xFFFFFFFF));
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_set1_epi32(std::bit_cast<int>(0xFFFFFFFF));
+            KAIXO_SIMD_BASE return !value;
+        }
+
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL noise() {
+            KAIXO_SIMD_CASE(AVX2, 256, int) {
+                thread_local struct {
+                    __m256i part1{ .m256i_u64 { 0xe7a1b8b86f088db3, 0x383db7c7e2c8d0c4, 0x9f1cbdee9c6b99e1, 0x5e4d910b0a57edc5, } };
+                    __m256i part2{ .m256i_u64 { 0x4f61df2c3ca81ac1, 0x2719b1b6a8c91597, 0xc64fd97a0d9bf86a, 0x492ed6ecf82b7d4b, } };
+                } state;
+
+                __m256i s1 = state.part1;
+                const __m256i s0 = state.part2;
+                state.part1 = state.part2;
+                s1 = _mm256_xor_si256(state.part2, _mm256_slli_epi64(state.part2, 23));
+                state.part2 = _mm256_xor_si256(
+                    _mm256_xor_si256(_mm256_xor_si256(s1, s0),
+                        _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
+                return _mm256_add_epi64(state.part2, s0);
+            }
+
+            KAIXO_SIMD_CASE(AVX | AVX2, 256, float) {
+                thread_local struct {
+                    __m256i part1{ .m256i_u64 { 0xdb899e0994c4b301, 0x3f5abe6af2efd66e, 0x225316feba2bd4eb, 0xbe5ba0327ff5a462, } };
+                    __m256i part2{ .m256i_u64 { 0x891627810c57c0dc, 0x8793773053862b5f, 0x6e041e1b9b54605a, 0x19d9edbb34011806, } };
+                } state;
+
+                __m256i s1 = state.part1;
+                const __m256i s0 = state.part2;
+                state.part1 = state.part2;
+                s1 = _mm256_xor_si256(state.part2, _mm256_slli_epi64(state.part2, 23));
+                state.part2 = _mm256_xor_si256(
+                    _mm256_xor_si256(_mm256_xor_si256(s1, s0),
+                        _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
+                return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(state.part2, s0)), 
+                    _mm256_set1_ps(std::numeric_limits<std::uint32_t>::max()));
+            }
+        }
+
+        // ------------------------------------------------
+
     };
 
     // ------------------------------------------------
