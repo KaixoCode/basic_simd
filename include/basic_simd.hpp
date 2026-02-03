@@ -972,6 +972,15 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL rcp() const {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_rcp_ps(value);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_rcp_ps(value);
+            KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_rcp14_ps(value);
+            KAIXO_SIMD_BASE_TYPE(float) return 1.f / value;
+        }
+
+        // ------------------------------------------------
+
         template<class To>
         KAIXO_INLINE basic_simd<To, Bits, Instructions> KAIXO_VECTORCALL cast() const {
             KAIXO_SIMD_BASE return static_cast<To>(value);
@@ -1284,6 +1293,14 @@ namespace kaixo {
     KAIXO_INLINE Type KAIXO_VECTORCALL fmsub(const Type& a, const Type& b, const Type& c)  { 
         if constexpr (!is_simd<Type>) return (a * b) - c;
         else return Type::fmsub(a, b, c);
+    }
+
+    // ------------------------------------------------
+    
+    template<class Type>
+    KAIXO_INLINE Type KAIXO_VECTORCALL rcp(const Type& a)  { 
+        if constexpr (!is_simd<Type>) return 1.f / a;
+        else return a.rcp();
     }
 
     // ------------------------------------------------
