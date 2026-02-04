@@ -443,6 +443,19 @@ namespace kaixo {
             KAIXO_SIMD_BASE *addr = value;
         }
 
+        KAIXO_INLINE void KAIXO_VECTORCALL stream(base* addr) const  {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_stream_ps(addr, value);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_stream_ps(addr, value);
+            KAIXO_SIMD_CASE(AVX512F, 512, float) return _mm512_stream_ps(addr, value);
+            KAIXO_SIMD_CASE(SSE2, 128, int) return _mm_stream_si128((__m128i*)addr, value);
+            KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_stream_si256((__m256i*)addr, value);
+            KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_stream_si512((__m512i*)addr, value);
+            KAIXO_SIMD_CASE(SSE2, 128, short) return _mm_stream_si128((__m128i*)addr, value);
+            KAIXO_SIMD_CASE(AVX, 256, short) return _mm256_stream_si256((__m256i*)addr, value);
+            KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_stream_si512((__m512i*)addr, value);
+            KAIXO_SIMD_BASE *addr = value;
+        }
+
         // ------------------------------------------------
 
         simd_type value{};
@@ -1339,6 +1352,12 @@ namespace kaixo {
     KAIXO_INLINE void KAIXO_VECTORCALL store(base_t<Type>* ptr, const Type& value)  {
         if constexpr (!is_simd<Type>) *ptr = value;
         else value.store(ptr);
+    }
+
+    template<class Type>
+    KAIXO_INLINE void KAIXO_VECTORCALL stream(base_t<Type>* ptr, const Type& value)  {
+        if constexpr (!is_simd<Type>) *ptr = value;
+        else value.stream(ptr);
     }
 
     template<class Type, std::convertible_to<Type> B>
