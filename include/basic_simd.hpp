@@ -430,6 +430,8 @@ namespace kaixo {
             KAIXO_SIMD_BASE *addr = value;
         }
 
+        KAIXO_INLINE static void KAIXO_VECTORCALL store(base* addr, const basic_simd& a) { a.store(addr); }
+
         KAIXO_INLINE void KAIXO_VECTORCALL storeu(base* addr) const  {
             KAIXO_SIMD_CASE(SSE, 128, float) return _mm_storeu_ps(addr, value);
             KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_storeu_ps(addr, value);
@@ -443,6 +445,8 @@ namespace kaixo {
             KAIXO_SIMD_BASE *addr = value;
         }
 
+        KAIXO_INLINE static void KAIXO_VECTORCALL storeu(base* addr, const basic_simd& a) { a.storeu(addr); }
+
         KAIXO_INLINE void KAIXO_VECTORCALL stream(base* addr) const  {
             KAIXO_SIMD_CASE(SSE, 128, float) return _mm_stream_ps(addr, value);
             KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_stream_ps(addr, value);
@@ -455,6 +459,8 @@ namespace kaixo {
             KAIXO_SIMD_CASE(AVX512F, 512, short) return _mm512_stream_si512((__m512i*)addr, value);
             KAIXO_SIMD_BASE *addr = value;
         }
+
+        KAIXO_INLINE static void KAIXO_VECTORCALL stream(base* addr, const basic_simd& a) { a.stream(addr); }
 
         // ------------------------------------------------
 
@@ -881,6 +887,11 @@ namespace kaixo {
             KAIXO_SIMD_BASE_TYPE(float) return value < 0 ? -1 : 1;
         }
 
+        KAIXO_INLINE basic_simd KAIXO_VECTORCALL negative() const  {
+            KAIXO_SIMD_CASE(SSE, 128, float) return _mm_and_ps(value, _mm_set1_ps(-0.0f));
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_and_ps(value, _mm256_set1_ps(-0.0f));
+        }
+
         // ------------------------------------------------
 
         KAIXO_INLINE basic_simd KAIXO_VECTORCALL log() const  {
@@ -996,6 +1007,8 @@ namespace kaixo {
             KAIXO_SIMD_BASE_TYPE(float) return 1.f / value;
         }
 
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL rcp(const basic_simd& a) { return a.rcp(); }
+
         // ------------------------------------------------
 
         template<class To>
@@ -1014,6 +1027,11 @@ namespace kaixo {
         }
 
         template<class To>
+        KAIXO_INLINE static basic_simd<To, Bits, Instructions> KAIXO_VECTORCALL cast(const basic_simd& a) {
+            return a.template cast<To>();
+        }
+
+        template<class To>
         KAIXO_INLINE basic_simd<To, Bits, Instructions> KAIXO_VECTORCALL reinterpret() const {
             KAIXO_SIMD_BASE return std::bit_cast<To>(value);
             if constexpr (std::same_as<Ty, To>) return value;
@@ -1026,6 +1044,11 @@ namespace kaixo {
                 KAIXO_SIMD_CASE(AVX, 256, int) return _mm256_castsi256_ps(value);
                 KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_castsi512_ps(value);
             }
+        }
+
+        template<class To>
+        KAIXO_INLINE static basic_simd<To, Bits, Instructions> KAIXO_VECTORCALL reinterpret(const basic_simd& a) {
+            return a.template reinterpret<To>();
         }
 
         // ------------------------------------------------
@@ -1042,13 +1065,6 @@ namespace kaixo {
             KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_i32gather_epi32(data, value, sizeof(int));
             KAIXO_SIMD_CASE(AVX512F, 512, int) return _mm512_i32gather_epi32(value, data, sizeof(int));
             KAIXO_SIMD_BASE_TYPE(int) return data[value];
-        }
-
-        // ------------------------------------------------
-        
-        KAIXO_INLINE basic_simd KAIXO_VECTORCALL iff(auto then, auto otherwise) const {
-            KAIXO_SIMD_BASE return value ? then() : otherwise();
-            else return *this & then() | ~*this & otherwise();
         }
 
         // ------------------------------------------------
@@ -1152,6 +1168,20 @@ namespace kaixo {
                 __m256 ri_hi = _mm256_unpackhi_ps(real, imag); // r2,i2,r3,i3
                 return _mm256_permute2f128_ps(ri_lo, ri_hi, 0x20); // combine
             }
+        }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL blend(const basic_simd& mask, const basic_simd& a, const basic_simd& b) {
+            KAIXO_SIMD_CASE(SSE4_1, 128, float) return _mm_blendv_ps(b.value, a.value, mask.value);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_blendv_ps(b.value, a.value, mask.value);
+        }
+
+        KAIXO_INLINE static basic_simd KAIXO_VECTORCALL blend(int mask, const basic_simd& a, const basic_simd& b) {
+            KAIXO_SIMD_CASE(SSE4_1, 128, float) return _mm_blend_ps(b.value, a.value, mask);
+            KAIXO_SIMD_CASE(AVX, 256, float) return _mm256_blend_ps(b.value, a.value, mask);
+            KAIXO_SIMD_CASE(AVX2, 128, int) return _mm_blend_epi32(b.value, a.value, mask);
+            KAIXO_SIMD_CASE(AVX2, 256, int) return _mm256_blend_epi32(b.value, a.value, mask);
         }
 
         // ------------------------------------------------
