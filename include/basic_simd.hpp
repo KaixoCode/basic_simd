@@ -565,7 +565,9 @@ namespace kaixo {
 
         KAIXO_INLINE basic_simd() : value() {}
         KAIXO_INLINE basic_simd(simd_type val) : value(val) {}
-        KAIXO_INLINE basic_simd(value_type val) requires (!std::same_as<simd_type, value_type>) : value(Abi::set1(val)) {}
+
+        template<class Ty> requires (std::convertible_to<Ty, value_type> && !std::same_as<Ty, simd_type>)
+        KAIXO_INLINE basic_simd(Ty val) : value(Abi::set1(static_cast<value_type>(val))) {}
 
         // ------------------------------------------------
 
