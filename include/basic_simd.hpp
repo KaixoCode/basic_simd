@@ -443,7 +443,7 @@ namespace kaixo {
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL add(simd_type a, simd_type b) { return _mm256_add_epi32(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sub(simd_type a, simd_type b) { return _mm256_sub_epi32(a, b); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL mul(simd_type a, simd_type b) { return _mm256_mul_epi32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL mul(simd_type a, simd_type b) { return _mm256_mullo_epi32(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL div(simd_type a, simd_type b) { return _mm256_div_epi32(a, b); }
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL negate(simd_type a) { return sub(set1(0), a); }
@@ -592,9 +592,9 @@ namespace kaixo {
         KAIXO_INLINE void storeu(buffer_type to) const KAIXO_FROM_ABI(storeu(to, value));
         KAIXO_INLINE void stream(buffer_type to) const KAIXO_FROM_ABI(stream(to, value));
 
-        KAIXO_INLINE static void store(buffer_type to, simd_type from) KAIXO_FROM_ABI(store(to, from));
-        KAIXO_INLINE static void storeu(buffer_type to, simd_type from) KAIXO_FROM_ABI(storeu(to, from));
-        KAIXO_INLINE static void stream(buffer_type to, simd_type from) KAIXO_FROM_ABI(stream(to, from));
+        KAIXO_INLINE static void store(buffer_type to, const basic_simd& from) KAIXO_FROM_ABI(store(to, from));
+        KAIXO_INLINE static void storeu(buffer_type to, const basic_simd& from) KAIXO_FROM_ABI(storeu(to, from));
+        KAIXO_INLINE static void stream(buffer_type to, const basic_simd& from) KAIXO_FROM_ABI(stream(to, from));
 
         KAIXO_INLINE static void store(buffer_type to, value_type from) { store(to, set1(from)); }
         KAIXO_INLINE static void storeu(buffer_type to, value_type from) { store(to, set1(from)); }
@@ -602,8 +602,8 @@ namespace kaixo {
         KAIXO_INLINE auto gather(const float* data) const -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(gather(data, value));
         KAIXO_INLINE auto gather(const int* data) const -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(gather(data, value));
 
-        KAIXO_INLINE static auto gather(const float* data, simd_type index) -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(gather(data, index));
-        KAIXO_INLINE static auto gather(const int* data, simd_type index) -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(gather(data, index));
+        KAIXO_INLINE static auto gather(const float* data, const basic_simd& index) -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(gather(data, index));
+        KAIXO_INLINE static auto gather(const int* data, const basic_simd& index) -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(gather(data, index));
 
         // ------------------------------------------------
 
@@ -612,10 +612,10 @@ namespace kaixo {
         KAIXO_INLINE auto to_float() const -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(to_float(value));
         KAIXO_INLINE auto as_float() const -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(as_float(value));
 
-        KAIXO_INLINE static auto to_int(simd_type a) -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(to_int(a));
-        KAIXO_INLINE static auto as_int(simd_type a) -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(as_int(a));
-        KAIXO_INLINE static auto to_float(simd_type a) -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(to_float(a));
-        KAIXO_INLINE static auto as_float(simd_type a) -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(as_float(a));
+        KAIXO_INLINE static auto to_int(const basic_simd& a) -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(to_int(a));
+        KAIXO_INLINE static auto as_int(const basic_simd& a) -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(as_int(a));
+        KAIXO_INLINE static auto to_float(const basic_simd& a) -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(to_float(a));
+        KAIXO_INLINE static auto as_float(const basic_simd& a) -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(as_float(a));
             
         // ------------------------------------------------
 
