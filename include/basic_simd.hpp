@@ -176,6 +176,7 @@ namespace kaixo {
         KAIXO_INLINE static simd_type sin(simd_type a) requires std::floating_point<simd_type> { return std::sin(a); }
         KAIXO_INLINE static simd_type sinh(simd_type a) requires std::floating_point<simd_type> { return std::sinh(a); }
         KAIXO_INLINE static simd_type pow(simd_type a, simd_type b) requires std::floating_point<simd_type> { return std::pow(a, b); }
+        KAIXO_INLINE static std::pair<simd_type, simd_type> sincos(simd_type a) requires std::floating_point<simd_type> { return std::make_pair(std::sin(a), std::cos(a)); }
         
         // ------------------------------------------------
 
@@ -355,6 +356,12 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return _mm256_sin_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return _mm256_sinh_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return _mm256_pow_ps(a, b); }
+
+        KAIXO_INLINE static std::pair<simd_type, simd_type> KAIXO_VECTORCALL sincos(simd_type a) { 
+            simd_type _cos;
+            simd_type _sin = _mm256_sincos_ps(&_cos, a);
+            return std::make_pair(_sin, _cos);
+        }
 
         // ------------------------------------------------
 
@@ -729,6 +736,7 @@ namespace kaixo {
         KAIXO_INLINE basic_simd cosh() const KAIXO_FROM_ABI(cosh(value));
         KAIXO_INLINE basic_simd sin() const KAIXO_FROM_ABI(sin(value));
         KAIXO_INLINE basic_simd sinh() const KAIXO_FROM_ABI(sinh(value));
+        KAIXO_INLINE std::pair<basic_simd, basic_simd> sincos() const KAIXO_FROM_ABI(sincos(value));
 
         KAIXO_INLINE static basic_simd rcp(const basic_simd& a) KAIXO_FROM_ABI(rcp(a));
         KAIXO_INLINE static basic_simd log(const basic_simd& a) KAIXO_FROM_ABI(log(a));
@@ -745,6 +753,7 @@ namespace kaixo {
         KAIXO_INLINE static basic_simd sin(const basic_simd& a) KAIXO_FROM_ABI(sin(a));
         KAIXO_INLINE static basic_simd sinh(const basic_simd& a) KAIXO_FROM_ABI(sinh(a));
         KAIXO_INLINE static basic_simd pow(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(pow(a, b));
+        KAIXO_INLINE static std::pair<basic_simd, basic_simd> sincos(const basic_simd& a) KAIXO_FROM_ABI(sincos(a));
 
         KAIXO_INLINE basic_simd fast_nsin() const KAIXO_FROM_ABI(fast_nsin(value));
         KAIXO_INLINE static basic_simd fast_nsin(const basic_simd& a) KAIXO_FROM_ABI(fast_nsin(a));

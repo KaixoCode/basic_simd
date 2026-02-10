@@ -15,8 +15,7 @@ int main() {
     simd_t b{ 1 };
     simd_t c{ 3 };
 
-    auto res = a == b;
-
+    auto res12 = a == b;
 
     simd_t::blend(a == b, a, b);
 
@@ -28,6 +27,10 @@ int main() {
 
     simd_256 p;
     simd_256i q;
+
+    p.sincos();
+
+    simd_256::sincos(p);
 
     q.gather(data);
 
