@@ -394,7 +394,7 @@ namespace kaixo {
                 _mm256_xor_si256(_mm256_xor_si256(s1, s0),
                     _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
             return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(state.part2, s0)),
-                _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::uint32_t>::max())));
+                _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
         }
 
         // ------------------------------------------------
@@ -538,6 +538,12 @@ namespace kaixo {
 
         KAIXO_INLINE static mask_type true_mask() KAIXO_FROM_ABI(true_mask());
         KAIXO_INLINE static mask_type false_mask() KAIXO_FROM_ABI(false_mask());
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE friend basic_simd_mask operator&&(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_and(a.value, b.value));
+        KAIXO_INLINE friend basic_simd_mask operator||(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_or(a.value, b.value));
+        KAIXO_INLINE friend basic_simd_mask operator~(const basic_simd_mask& a) KAIXO_FROM_ABI(bit_not(a.value));
 
         // ------------------------------------------------
 
