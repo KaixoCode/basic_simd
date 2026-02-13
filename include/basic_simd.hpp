@@ -490,6 +490,10 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL blend(mask_type mask, simd_type a, simd_type b) { return _mm256_blendv_epi8(b, a, mask); }
+
+        // ------------------------------------------------
+
     };
 
     // ------------------------------------------------
@@ -742,6 +746,7 @@ namespace kaixo {
         KAIXO_INLINE basic_simd cosh() const KAIXO_FROM_ABI(cosh(value));
         KAIXO_INLINE basic_simd sin() const KAIXO_FROM_ABI(sin(value));
         KAIXO_INLINE basic_simd sinh() const KAIXO_FROM_ABI(sinh(value));
+        KAIXO_INLINE basic_simd pow(const basic_simd& b) KAIXO_FROM_ABI(pow(value, b));
         KAIXO_INLINE std::pair<basic_simd, basic_simd> sincos() const KAIXO_FROM_ABI(sincos(value));
 
         KAIXO_INLINE static basic_simd rcp(const basic_simd& a) KAIXO_FROM_ABI(rcp(a));
