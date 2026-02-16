@@ -397,6 +397,18 @@ namespace kaixo {
                 _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
         }
 
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL noise(__m256i& part1, __m256i& part2) {
+            __m256i s1 = part1;
+            const __m256i s0 = part2;
+            part1 = part2;
+            s1 = _mm256_xor_si256(part2, _mm256_slli_epi64(part2, 23));
+            part2 = _mm256_xor_si256(
+                _mm256_xor_si256(_mm256_xor_si256(s1, s0),
+                    _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
+            return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(part2, s0)),
+                _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
+        }
+
         // ------------------------------------------------
 
     };
@@ -776,6 +788,9 @@ namespace kaixo {
         // ------------------------------------------------
 
         KAIXO_INLINE static basic_simd noise() KAIXO_FROM_ABI(noise());
+
+        using _int_type = basic_simd<int, typename simd_find_abi<int, bits>::type>;
+        KAIXO_INLINE static basic_simd noise(_int_type& part1, _int_type& part2) KAIXO_FROM_ABI(noise(part1.value, part2.value));
 
         // ------------------------------------------------
 
