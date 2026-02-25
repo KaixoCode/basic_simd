@@ -337,6 +337,7 @@ namespace kaixo {
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign(simd_type a) { return copysign(a, set1(1)); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL copysign(simd_type from, simd_type to) { return _mm256_or_ps(to, _mm256_and_ps(from, _mm256_set1_ps(-0.f))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL xorsign(simd_type from, simd_type to) { return _mm256_xor_ps(to, _mm256_and_ps(from, _mm256_set1_ps(-0.f))); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL abs(simd_type a) { return _mm256_andnot_ps(_mm256_set1_ps(-0.0), a); }
 
         // ------------------------------------------------
@@ -739,7 +740,8 @@ namespace kaixo {
         KAIXO_INLINE basic_simd abs() const KAIXO_FROM_ABI(abs(value));
 
         KAIXO_INLINE static basic_simd sign(const basic_simd& a) KAIXO_FROM_ABI(sign(a));
-        KAIXO_INLINE static basic_simd copysign(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(copysign(a, b));
+        KAIXO_INLINE static basic_simd copysign(const basic_simd& from, const basic_simd& to) KAIXO_FROM_ABI(copysign(from, to));
+        KAIXO_INLINE static basic_simd xorsign(const basic_simd& from, const basic_simd& to) KAIXO_FROM_ABI(xorsign(from, to));
         KAIXO_INLINE static basic_simd abs(const basic_simd& a) KAIXO_FROM_ABI(abs(a));
 
         // ------------------------------------------------
