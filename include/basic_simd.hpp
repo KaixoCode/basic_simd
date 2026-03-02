@@ -75,6 +75,10 @@ namespace kaixo {
         using float_alias = float_t<bytes>;
 
         // ------------------------------------------------
+
+        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { return a; }
+
+        // ------------------------------------------------
         
         KAIXO_INLINE static simd_type setzero() { return static_cast<simd_type>(0); }
         KAIXO_INLINE static simd_type setincr() { return static_cast<simd_type>(0); }
@@ -92,6 +96,9 @@ namespace kaixo {
         KAIXO_INLINE static void store(buffer_type to, simd_type from) { *to = from; };
         KAIXO_INLINE static void storeu(buffer_type to, simd_type from) { *to = from; };
         KAIXO_INLINE static void stream(buffer_type to, simd_type from) { *to = from; };
+
+        KAIXO_INLINE static float gather(const float* data, simd_type index) requires std::integral<simd_type> { return data[index]; };
+        KAIXO_INLINE static int gather(const int* data, simd_type index) requires std::integral<simd_type> { return data[index]; };
 
         // ------------------------------------------------
 
@@ -157,6 +164,7 @@ namespace kaixo {
 
         KAIXO_INLINE static simd_type sign(simd_type a) requires std::floating_point<simd_type> { return a < 0 ? -1 : 1; }
         KAIXO_INLINE static simd_type copysign(simd_type from, simd_type to) requires std::floating_point<simd_type> { return sign(from) < sign(to) ? -to : to; }
+        KAIXO_INLINE static simd_type xorsign(simd_type from, simd_type to) requires std::floating_point<simd_type> { return sign(from) != sign(to) ? -to : to; }
         KAIXO_INLINE static simd_type abs(simd_type a) requires std::floating_point<simd_type> { return a < 0 ? -a : a; }
 
         // ------------------------------------------------
@@ -206,6 +214,15 @@ namespace kaixo {
             return static_cast<float>(static_cast<long double>(result) / std::numeric_limits<std::uint64_t>::max());
         }
 
+        KAIXO_INLINE static simd_type noise(int& part1, int& part2) {
+            std::uint32_t s1 = std::bit_cast<std::uint32_t>(part1);
+            const std::uint32_t s0 = std::bit_cast<std::uint32_t>(part2);
+            part1 = part2;
+            s1 = std::bit_cast<std::uint32_t>(part2) ^ (std::bit_cast<std::uint32_t>(part2) << 23);
+            part2 = std::bit_cast<int>(((s1 ^ s0) ^ (s1 >> 18)) ^ (s0 >> 5));
+            return static_cast<float>(std::bit_cast<std::uint32_t>(part2) + s0) / static_cast<float>(std::numeric_limits<std::int32_t>::max());
+        }
+
         // ------------------------------------------------
 
     };
@@ -244,6 +261,10 @@ namespace kaixo {
         constexpr static std::size_t elements  = sizeof(simd_type) / sizeof(value_type);
         constexpr static std::size_t bytes     = sizeof(simd_type);
         constexpr static std::size_t alignment = alignof(simd_type);
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { return a.m256_f32[i]; }
 
         // ------------------------------------------------
 
@@ -434,6 +455,10 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { return a.m256i_i32[i]; }
+
+        // ------------------------------------------------
+
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL setzero() { return _mm256_setzero_si256(); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL setincr() { return _mm256_set_epi32(7, 6, 5, 4, 3, 2, 1, 0); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL set1(value_type val) { return _mm256_set1_epi32(val); }
@@ -602,6 +627,10 @@ namespace kaixo {
         // ------------------------------------------------
 
         KAIXO_INLINE operator simd_type() const { return value; }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE value_type operator[](std::size_t i) const KAIXO_FROM_ABI(index(value, i));
 
         // ------------------------------------------------
 

@@ -10,6 +10,12 @@ int main() {
     using namespace::kaixo;
 
     using simd_t = simd<float, 0>;
+    using simdi_t = simd<int, 0>;
+
+    simdi_t part1;
+    simdi_t part2;
+
+    simd_t::noise(part1, part2);
 
     simd_t a{ 1 };
     simd_t b{ 1 };
