@@ -34,10 +34,6 @@ int main() {
     simd_256 p;
     simd_256i q;
 
-    p.sincos();
-
-    simd_256::sincos(p);
-
     q.gather(data);
 
     p.floor();

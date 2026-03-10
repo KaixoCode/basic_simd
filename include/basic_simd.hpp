@@ -238,7 +238,215 @@ namespace kaixo {
 
     // ------------------------------------------------
 
+    struct simd_float_256_neon {
 
+        // ------------------------------------------------
+
+        using value_type = float;
+        using mask_type = float32x4_t;
+        using simd_type = float32x4_t;
+        using buffer_type = value_type*;
+        using const_buffer_type = const value_type*;
+        using int_alias = uint32x4_t;
+
+        // ------------------------------------------------
+
+        constexpr static std::size_t elements  = sizeof(simd_type) / sizeof(value_type);
+        constexpr static std::size_t bytes     = sizeof(simd_type);
+        constexpr static std::size_t alignment = alignof(simd_type);
+
+        // ------------------------------------------------
+        
+        template<float(*fun)(float)> 
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
+            float vals[elements];
+            vst1q_f32(vals, a);
+            for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
+            return vld1q_f32(vals);
+		}
+
+        template<float(*fun)(float, float)> 
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a, simd_type b) {
+            float valsa[elements];
+            float valsb[elements];
+            vst1q_f32(valsa, a);
+            vst1q_f32(valsb, b);
+            for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[b]);
+            return vld1q_f32(valsa);
+		}
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { return vgetq_lane_f32(a, i); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL setzero() { return vdupq_n_f32(0.f); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL set1(value_type val) { return vdupq_n_f32(val); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL setincr() {
+            constexpr float vals[4] = { 0.f,1.f,2.f,3.f };
+            return vld1q_f32(vals);
+        }
+
+        KAIXO_INLINE static mask_type KAIXO_VECTORCALL true_mask() { return vdupq_n_f32(std::bit_cast<value_type>(0xFFFFFFFF)); }
+        KAIXO_INLINE static mask_type KAIXO_VECTORCALL false_mask() { return vdupq_n_f32(0.f); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL load(const_buffer_type data) { return vld1q_f32(data); };
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadu(const_buffer_type data) { return vld1q_f32(data); };
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadr(const_buffer_type data) {
+            float vals[4] = { data[3], data[2], data[1], data[0] };
+            return vld1q_f32(vals);
+        };
+
+        KAIXO_INLINE static void KAIXO_VECTORCALL store(buffer_type to, simd_type from) { vst1q_f32(to, from); };
+        KAIXO_INLINE static void KAIXO_VECTORCALL storeu(buffer_type to, simd_type from) { vst1q_f32(to, from); };
+        KAIXO_INLINE static void KAIXO_VECTORCALL stream(buffer_type to, simd_type from) { vst1q_f32(to, from); };
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static int_alias KAIXO_VECTORCALL to_int(simd_type a) { return vcvtq_u32_f32(a); }
+        KAIXO_INLINE static int_alias KAIXO_VECTORCALL as_int(simd_type a) { return vreinterpretq_u32_f32(a); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL add(simd_type a, simd_type b) { return vaddq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sub(simd_type a, simd_type b) { return vsubq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL mul(simd_type a, simd_type b) { return vmulq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL div(simd_type a, simd_type b) { return vdivq_f32(a, b); }
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL negate(simd_type a) { return vnegq_f32(a); }
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL fmadd(simd_type a, simd_type b, simd_type c) { return vfmaq_f32(a, b, c); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL fmsub(simd_type a, simd_type b, simd_type c) { return vfmsq_f32(a, b, c); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_and(simd_type a, simd_type b) { return vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(b))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_or(simd_type a, simd_type b) { return vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(b))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_xor(simd_type a, simd_type b) { return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a), vreinterpretq_u32_f32(b))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_not(simd_type a) { return vreinterpretq_f32_u32(vmvnq_u32(vreinterpretq_u32_f32(a))); }
+        
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL eq(simd_type a, simd_type b) { return vceqq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL neq(simd_type a, simd_type b) { return vmvnq_u32(vceqq_f32(a, b)); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL gt(simd_type a, simd_type b) { return vcgtq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL gteq(simd_type a, simd_type b) { return vcgeq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL lt(simd_type a, simd_type b) { return vcltq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL lteq(simd_type a, simd_type b) { return vcleq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL lt0(simd_type a) { return vcltq_f32(a, vdupq_n_f32(0.f)); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL min(simd_type a, simd_type b) { return vminq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL max(simd_type a, simd_type b) { return vmaxq_f32(a, b); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static float KAIXO_VECTORCALL sum(simd_type a) {
+            float32x2_t t = vadd_f32(vget_low_f32(a), vget_high_f32(a));
+            t = vpadd_f32(t, t);
+            return vget_lane_f32(t, 0);
+        }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL reverse(simd_type a) {
+            return vrev64q_f32(vcombine_f32(vget_high_f32(a), vget_low_f32(a)));
+        }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL trunc(simd_type a) { return vrndq_f32(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL floor(simd_type a) { return vrndmq_f32(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL ceil(simd_type a) { return vrndpq_f32(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL round(simd_type a) { return vrndnq_f32(a); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign(simd_type a) { return copysign(a, set1(1)); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL copysign(simd_type from, simd_type to) { return vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(to), vandq_u32(vreinterpretq_u32_f32(from), vdupq_n_u32(0x80000000)))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL xorsign(simd_type from, simd_type to) { return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(to), vandq_u32(vreinterpretq_u32_f32(from), vdupq_n_u32(0x80000000)))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL abs(simd_type a) { return vabsq_f32(a); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL rcp(simd_type a) { return vrecpeq_f32(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return scalar_fallback<&std::log>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return scalar_fallback<&std::log2>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return scalar_fallback<&std::log10>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sqrt(simd_type a) { return vsqrt_f32(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return scalar_fallback<&std::cbrt>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return scalar_fallback<&std::exp>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return scalar_fallback<&std::exp2>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return scalar_fallback<&std::tanh>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return scalar_fallback<&std::cos>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return scalar_fallback<&std::cosh>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return scalar_fallback<&std::sin>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return scalar_fallback<&std::sinh>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return scalar_fallback<&std::pow>(a, b); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL fast_nsin(simd_type a) {
+            const simd_type c1 = vdupq_n_f32(-16.0f);
+            const simd_type c2 = vdupq_n_f32(8.0f);
+            const simd_type c3 = vdupq_n_f32(0.224f);
+            const simd_type c4 = vdupq_n_f32(0.776f);
+
+            // (-16 * abs(a)) + 8
+            simd_type inter1 = vfmaq_f32(c2, c1, vabsq_f32(a));
+
+            // a * inter1
+            simd_type inter2 = vmulq_f32(inter1, a);
+
+            // (0.224 * abs(inter2)) + 0.776
+            simd_type inter3 = vfmaq_f32(c4, c3, vabsq_f32(inter2));
+
+            // inter2 * inter3
+            return vmulq_f32(inter3, inter2);
+        }
+
+        // ------------------------------------------------
+        
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL blend(mask_type mask, simd_type a, simd_type b) { return _mm256_blendv_ps(b, a, mask); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL noise() { 
+            thread_local struct {
+                __m256i part1{ .m256i_u64 { 0xdb899e0994c4b301, 0x3f5abe6af2efd66e, 0x225316feba2bd4eb, 0xbe5ba0327ff5a462, } };
+                __m256i part2{ .m256i_u64 { 0x891627810c57c0dc, 0x8793773053862b5f, 0x6e041e1b9b54605a, 0x19d9edbb34011806, } };
+            } state;
+
+            __m256i s1 = state.part1;
+            const __m256i s0 = state.part2;
+            state.part1 = state.part2;
+            s1 = _mm256_xor_si256(state.part2, _mm256_slli_epi64(state.part2, 23));
+            state.part2 = _mm256_xor_si256(
+                _mm256_xor_si256(_mm256_xor_si256(s1, s0),
+                    _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
+            return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(state.part2, s0)),
+                _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
+        }
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL noise(__m256i& part1, __m256i& part2) {
+            __m256i s1 = part1;
+            const __m256i s0 = part2;
+            part1 = part2;
+            s1 = _mm256_xor_si256(part2, _mm256_slli_epi64(part2, 23));
+            part2 = _mm256_xor_si256(
+                _mm256_xor_si256(_mm256_xor_si256(s1, s0),
+                    _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
+            return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(part2, s0)),
+                _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
+        }
+
+        // ------------------------------------------------
+
+    };
 
     // ------------------------------------------------
 
@@ -371,19 +579,12 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return _mm256_cbrt_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return _mm256_exp_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return _mm256_exp2_ps(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp10(simd_type a) { return _mm256_exp10_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return _mm256_tanh_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return _mm256_cos_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return _mm256_cosh_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return _mm256_sin_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return _mm256_sinh_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return _mm256_pow_ps(a, b); }
-
-        KAIXO_INLINE static std::pair<simd_type, simd_type> KAIXO_VECTORCALL sincos(simd_type a) { 
-            simd_type _cos;
-            simd_type _sin = _mm256_sincos_ps(&_cos, a);
-            return std::make_pair(_sin, _cos);
-        }
 
         // ------------------------------------------------
 
@@ -790,7 +991,6 @@ namespace kaixo {
         KAIXO_INLINE basic_simd sin() const KAIXO_FROM_ABI(sin(value));
         KAIXO_INLINE basic_simd sinh() const KAIXO_FROM_ABI(sinh(value));
         KAIXO_INLINE basic_simd pow(const basic_simd& b) KAIXO_FROM_ABI(pow(value, b));
-        KAIXO_INLINE std::pair<basic_simd, basic_simd> sincos() const KAIXO_FROM_ABI(sincos(value));
 
         KAIXO_INLINE static basic_simd rcp(const basic_simd& a) KAIXO_FROM_ABI(rcp(a));
         KAIXO_INLINE static basic_simd log(const basic_simd& a) KAIXO_FROM_ABI(log(a));
@@ -800,14 +1000,12 @@ namespace kaixo {
         KAIXO_INLINE static basic_simd cbrt(const basic_simd& a) KAIXO_FROM_ABI(cbrt(a));
         KAIXO_INLINE static basic_simd exp(const basic_simd& a) KAIXO_FROM_ABI(exp(a));
         KAIXO_INLINE static basic_simd exp2(const basic_simd& a) KAIXO_FROM_ABI(exp2(a));
-        KAIXO_INLINE static basic_simd exp10(const basic_simd& a) KAIXO_FROM_ABI(exp10(a));
         KAIXO_INLINE static basic_simd tanh(const basic_simd& a) KAIXO_FROM_ABI(tanh(a));
         KAIXO_INLINE static basic_simd cos(const basic_simd& a) KAIXO_FROM_ABI(cos(a));
         KAIXO_INLINE static basic_simd cosh(const basic_simd& a) KAIXO_FROM_ABI(cosh(a));
         KAIXO_INLINE static basic_simd sin(const basic_simd& a) KAIXO_FROM_ABI(sin(a));
         KAIXO_INLINE static basic_simd sinh(const basic_simd& a) KAIXO_FROM_ABI(sinh(a));
         KAIXO_INLINE static basic_simd pow(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(pow(a, b));
-        KAIXO_INLINE static std::pair<basic_simd, basic_simd> sincos(const basic_simd& a) KAIXO_FROM_ABI(sincos(a));
 
         KAIXO_INLINE basic_simd fast_nsin() const KAIXO_FROM_ABI(fast_nsin(value));
         KAIXO_INLINE static basic_simd fast_nsin(const basic_simd& a) KAIXO_FROM_ABI(fast_nsin(a));
