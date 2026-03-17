@@ -310,7 +310,7 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static int_alias KAIXO_VECTORCALL to_int(simd_type a) { return vcvtq_u32_f32(a); }
+        KAIXO_INLINE static int_alias KAIXO_VECTORCALL to_int(simd_type a) { return vcvtq_u32_f32(vrndzq_f32(a)); }
         KAIXO_INLINE static int_alias KAIXO_VECTORCALL as_int(simd_type a) { return vreinterpretq_u32_f32(a); }
 
         // ------------------------------------------------
@@ -371,8 +371,9 @@ namespace kaixo {
         // ------------------------------------------------
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign(simd_type a) { return copysign(a, set1(1)); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL copysign(simd_type from, simd_type to) { return vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(to), vandq_u32(vreinterpretq_u32_f32(from), vdupq_n_u32(0x80000000)))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL copysign(simd_type from, simd_type to) { return vreinterpretq_f32_u32(vorrq_u32(vandq_u32(vreinterpretq_u32_f32(to), vdupq_n_u32(0xFFFFFFFF - 0x80000000)), vandq_u32(vreinterpretq_u32_f32(from), vdupq_n_u32(0x80000000)))); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL xorsign(simd_type from, simd_type to) { return vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(to), vandq_u32(vreinterpretq_u32_f32(from), vdupq_n_u32(0x80000000)))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL orsign(simd_type from, simd_type to) { return vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(to), vandq_u32(vreinterpretq_u32_f32(from), vdupq_n_u32(0x80000000)))); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL abs(simd_type a) { return vabsq_f32(a); }
 
         // ------------------------------------------------
@@ -651,7 +652,7 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static __m256i KAIXO_VECTORCALL to_int(simd_type a) { return _mm256_cvtps_epi32(a); }
+        KAIXO_INLINE static __m256i KAIXO_VECTORCALL to_int(simd_type a) { return _mm256_cvttps_epi32(a); }
         KAIXO_INLINE static __m256i KAIXO_VECTORCALL as_int(simd_type a) { return _mm256_castps_si256(a); }
 
         // ------------------------------------------------
@@ -721,8 +722,9 @@ namespace kaixo {
         // ------------------------------------------------
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign(simd_type a) { return copysign(a, set1(1)); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL copysign(simd_type from, simd_type to) { return _mm256_or_ps(to, _mm256_and_ps(from, _mm256_set1_ps(-0.f))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL copysign(simd_type from, simd_type to) { return _mm256_or_ps(_mm256_and_ps(to, _mm256_set1_ps(std::bit_cast<float>(0xFFFFFFFF - 0x80000000))), _mm256_and_ps(from, _mm256_set1_ps(-0.f))); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL xorsign(simd_type from, simd_type to) { return _mm256_xor_ps(to, _mm256_and_ps(from, _mm256_set1_ps(-0.f))); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL orsign(simd_type from, simd_type to) { return _mm256_or_ps(to, _mm256_and_ps(from, _mm256_set1_ps(-0.f))); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL abs(simd_type a) { return _mm256_andnot_ps(_mm256_set1_ps(-0.0), a); }
 
         // ------------------------------------------------
@@ -935,6 +937,10 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE value_type operator[](std::size_t i) const KAIXO_FROM_ABI(index(value, i));
+
+        // ------------------------------------------------
+
         KAIXO_INLINE static mask_type true_mask() KAIXO_FROM_ABI(true_mask());
         KAIXO_INLINE static mask_type false_mask() KAIXO_FROM_ABI(false_mask());
 
@@ -943,6 +949,7 @@ namespace kaixo {
         KAIXO_INLINE friend basic_simd_mask operator&&(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_and(a.value, b.value));
         KAIXO_INLINE friend basic_simd_mask operator||(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_or(a.value, b.value));
         KAIXO_INLINE friend basic_simd_mask operator~(const basic_simd_mask& a) KAIXO_FROM_ABI(bit_not(a.value));
+        KAIXO_INLINE friend basic_simd_mask operator!(const basic_simd_mask& a) KAIXO_FROM_ABI(bit_not(a.value));
 
         // ------------------------------------------------
 
@@ -1077,10 +1084,10 @@ namespace kaixo {
         KAIXO_INLINE friend basic_simd operator<<(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(bit_shift_left(a, b));
         KAIXO_INLINE friend basic_simd operator>>(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(bit_shift_right(a, b));
 
-        KAIXO_INLINE basic_simd& operator<<(int b) requires requires { Abi::bit_shift_left(value, b); } { value = Abi::bit_shift_left(value, b); return *this; }
-        KAIXO_INLINE basic_simd& operator>>(int b) requires requires { Abi::bit_shift_right(value, b); } { value = Abi::bit_shift_right(value, b); return *this; }
-        KAIXO_INLINE basic_simd& operator<<(const basic_simd& b) requires requires { Abi::bit_shift_left(value, b); } { value = Abi::bit_shift_left(value, b); return *this; }
-        KAIXO_INLINE basic_simd& operator>>(const basic_simd& b) requires requires { Abi::bit_shift_right(value, b); } { value = Abi::bit_shift_right(value, b); return *this; }
+        KAIXO_INLINE basic_simd operator<<(int b) KAIXO_FROM_ABI(bit_shift_left(value, b));
+        KAIXO_INLINE basic_simd operator>>(int b) KAIXO_FROM_ABI(bit_shift_right(value, b));
+        KAIXO_INLINE basic_simd operator<<(const basic_simd& b) KAIXO_FROM_ABI(bit_shift_left(value, b));
+        KAIXO_INLINE basic_simd operator>>(const basic_simd& b) KAIXO_FROM_ABI(bit_shift_right(value, b));
 
         // ------------------------------------------------
 
@@ -1128,6 +1135,7 @@ namespace kaixo {
         KAIXO_INLINE static basic_simd sign(const basic_simd& a) KAIXO_FROM_ABI(sign(a));
         KAIXO_INLINE static basic_simd copysign(const basic_simd& from, const basic_simd& to) KAIXO_FROM_ABI(copysign(from, to));
         KAIXO_INLINE static basic_simd xorsign(const basic_simd& from, const basic_simd& to) KAIXO_FROM_ABI(xorsign(from, to));
+        KAIXO_INLINE static basic_simd orsign(const basic_simd& from, const basic_simd& to) KAIXO_FROM_ABI(orsign(from, to));
         KAIXO_INLINE static basic_simd abs(const basic_simd& a) KAIXO_FROM_ABI(abs(a));
 
         // ------------------------------------------------
@@ -1208,43 +1216,6 @@ namespace kaixo {
         std::same_as<decltype(Simd::alignment), std::size_t>;
     };
     
-    // ------------------------------------------------
-
-    template<class Ty> 
-    struct base : std::type_identity<Ty> {};
-
-    template<is_simd Ty> 
-    struct base<Ty> : std::type_identity<typename Ty::base> {};
-
-    template<class Ty> 
-    using base_t = typename base<Ty>::type;
-
-    // ------------------------------------------------
-
-    template<class Ty, class To> 
-    struct change_base : std::type_identity<To> {};
-
-    template<is_simd Ty, class To>
-    struct change_base<Ty, To> : std::type_identity<simd<To, Ty::bits>> {};
-
-    template<class Ty, class To> 
-    using change_base_t = typename change_base<Ty, To>::type;
-
-    // ------------------------------------------------
-
-    template<class Ty> struct simd_elements : std::integral_constant<std::size_t, 1> {};
-    template<is_simd Ty> struct simd_elements<Ty> : std::integral_constant<std::size_t, Ty::elements> {};
-    template<class Ty> constexpr std::size_t simd_elements_v = simd_elements<Ty>::value;
-
-    // ------------------------------------------------
-
-    // Multiply with 1 or -1
-    template<class Type, std::convertible_to<Type> B>
-    KAIXO_INLINE Type KAIXO_VECTORCALL mul1(const Type& condition, B value) {
-        if constexpr (!is_simd<Type>) return condition * value;
-        else return condition ^ ((-0.f) & value); // Toggle sign bit if value has sign bit
-    };
-
     // ------------------------------------------------
 
 }
