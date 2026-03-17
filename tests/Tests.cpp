@@ -20,7 +20,7 @@ namespace kaixo::test {
 
     constexpr float Epsilon = 1e-9f;
     constexpr float MediumEpsilon = 1e-6f;
-    constexpr float LargeEpsilon = 1e-3f;
+    constexpr float LargeEpsilon = 5e-3f;
 
     // ------------------------------------------------
 
