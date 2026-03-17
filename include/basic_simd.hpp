@@ -232,13 +232,17 @@ namespace kaixo {
     template<class T, std::size_t Bits>
     struct simd_find_abi : std::type_identity<simd_scalar_fallback_abi<T>> {};
 
+    template<class T> struct simd_find_abi<T, 512> : simd_find_abi<T, 256> {};
+    template<class T> struct simd_find_abi<T, 256> : simd_find_abi<T, 128> {};
+    template<class T> struct simd_find_abi<T, 128> : simd_find_abi<T, 0> {};
+
     // ------------------------------------------------
 
 #if KAIXO_SIMD_ARM
 
     // ------------------------------------------------
 
-    struct simd_float_256_neon {
+    struct simd_float_128_neon {
 
         // ------------------------------------------------
 
@@ -377,7 +381,7 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return scalar_fallback<&std::log>(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return scalar_fallback<&std::log2>(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return scalar_fallback<&std::log10>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sqrt(simd_type a) { return vsqrt_f32(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sqrt(simd_type a) { return vsqrtq_f32(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return scalar_fallback<&std::cbrt>(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return scalar_fallback<&std::exp>(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return scalar_fallback<&std::exp2>(a); }
@@ -411,42 +415,194 @@ namespace kaixo {
 
         // ------------------------------------------------
         
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL blend(mask_type mask, simd_type a, simd_type b) { return _mm256_blendv_ps(b, a, mask); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL blend(mask_type mask, simd_type a, simd_type b) {
+            return vbslq_s32(mask, a, b);
+        }
 
         // ------------------------------------------------
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL noise() { 
             thread_local struct {
-                __m256i part1{ .m256i_u64 { 0xdb899e0994c4b301, 0x3f5abe6af2efd66e, 0x225316feba2bd4eb, 0xbe5ba0327ff5a462, } };
-                __m256i part2{ .m256i_u64 { 0x891627810c57c0dc, 0x8793773053862b5f, 0x6e041e1b9b54605a, 0x19d9edbb34011806, } };
+                uint64x2_t  part1{ 0xdb899e0994c4b301, 0x3f5abe6af2efd66e };
+                uint64x2_t  part2{ 0x891627810c57c0dc, 0x8793773053862b5f };
             } state;
 
-            __m256i s1 = state.part1;
-            const __m256i s0 = state.part2;
+            uint64x2_t s1 = state.part1;
+            const uint64x2_t s0 = state.part2;
             state.part1 = state.part2;
-            s1 = _mm256_xor_si256(state.part2, _mm256_slli_epi64(state.part2, 23));
-            state.part2 = _mm256_xor_si256(
-                _mm256_xor_si256(_mm256_xor_si256(s1, s0),
-                    _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
-            return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(state.part2, s0)),
-                _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
+            s1 = veorq_u64(state.part2, vshlq_n_u64(state.part2, 23));
+            state.part2 = veorq_u64(
+                veorq_u64(veorq_u64(s1, s0),
+                    vshrq_n_u64(s1, 18)), vshrq_n_u64(s0, 5));
+
+            return vdivq_f32(vcvtq_f32_u32(vaddq_u64(state.part2, s0)),
+                vdupq_n_f32(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
         }
 
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL noise(__m256i& part1, __m256i& part2) {
-            __m256i s1 = part1;
-            const __m256i s0 = part2;
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL noise(uint64x2_t& part1, uint64x2_t& part2) {
+            uint64x2_t s1 = part1;
+            const uint64x2_t s0 = part2;
             part1 = part2;
-            s1 = _mm256_xor_si256(part2, _mm256_slli_epi64(part2, 23));
-            part2 = _mm256_xor_si256(
-                _mm256_xor_si256(_mm256_xor_si256(s1, s0),
-                    _mm256_srli_epi64(s1, 18)), _mm256_srli_epi64(s0, 5));
-            return _mm256_div_ps(_mm256_cvtepi32_ps(_mm256_add_epi64(part2, s0)),
-                _mm256_set1_ps(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
+            s1 = veorq_u64(part2, vshlq_n_u64(part2, 23));
+            part2 = veorq_u64(
+                veorq_u64(veorq_u64(s1, s0),
+                    vshrq_n_u64(s1, 18)), vshrq_n_u64(s0, 5));
+
+            return vdivq_f32(vcvtq_f32_u32(vaddq_u64(part2, s0)),
+                vdupq_n_f32(static_cast<float>(std::numeric_limits<std::int32_t>::max())));
         }
 
         // ------------------------------------------------
 
     };
+    
+    struct simd_int_128_neon {
+       
+       // ------------------------------------------------
+
+        using value_type = int;
+        using mask_type = int32x4_t;
+        using simd_type = int32x4_t;
+        using buffer_type = value_type*;
+        using const_buffer_type = const value_type*;
+
+        // ------------------------------------------------
+
+        constexpr static std::size_t elements  = sizeof(simd_type) / sizeof(value_type);
+        constexpr static std::size_t bytes     = sizeof(simd_type);
+        constexpr static std::size_t alignment = alignof(simd_type);
+
+        // ------------------------------------------------
+        
+        template<int(*fun)(int)>
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
+            int vals[elements];
+            vst1q_s32(vals, a);
+            for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
+            return vld1q_s32(vals);
+		}
+
+        template<int(*fun)(int, int)>
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a, simd_type b) {
+            int valsa[elements];
+            int valsb[elements];
+            vst1q_s32(valsa, a);
+            vst1q_s32(valsb, b);
+            for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[b]);
+            return vld1q_s32(valsa);
+		}
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { return vgetq_lane_s32(a, i); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL setzero() { return vdupq_n_s32(0.f); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL set1(value_type val) { return vdupq_n_s32(val); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL setincr() {
+            constexpr int vals[4] = { 0, 1, 2, 3 };
+            return vld1q_s32(vals);
+        }
+
+        KAIXO_INLINE static mask_type KAIXO_VECTORCALL true_mask() { return vdupq_n_s32(std::bit_cast<value_type>(0xFFFFFFFF)); }
+        KAIXO_INLINE static mask_type KAIXO_VECTORCALL false_mask() { return vdupq_n_s32(0); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL load(const_buffer_type data) { return vld1q_s32(data); };
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadu(const_buffer_type data) { return vld1q_s32(data); };
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadr(const_buffer_type data) {
+            int vals[4] = { data[3], data[2], data[1], data[0] };
+            return vld1q_s32(vals);
+        };
+
+        KAIXO_INLINE static void KAIXO_VECTORCALL store(buffer_type to, simd_type from) { vst1q_s32(to, from); };
+        KAIXO_INLINE static void KAIXO_VECTORCALL storeu(buffer_type to, simd_type from) { vst1q_s32(to, from); };
+        KAIXO_INLINE static void KAIXO_VECTORCALL stream(buffer_type to, simd_type from) { vst1q_s32(to, from); };
+
+        KAIXO_INLINE static float32x4_t KAIXO_VECTORCALL gather(const float* data, simd_type index) {
+            float vals[4] = {
+                data[vgetq_lane_s32(index, 0)],
+                data[vgetq_lane_s32(index, 1)],
+                data[vgetq_lane_s32(index, 2)],
+                data[vgetq_lane_s32(index, 3)],
+            };
+
+            return vld1q_f32(vals);
+        };
+
+        KAIXO_INLINE static int32x4_t KAIXO_VECTORCALL gather(const int* data, simd_type index) {
+            int vals[4] = {
+                data[vgetq_lane_s32(index, 0)],
+                data[vgetq_lane_s32(index, 1)],
+                data[vgetq_lane_s32(index, 2)],
+                data[vgetq_lane_s32(index, 3)],
+            };
+
+            return vld1q_s32(vals);
+        };
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static float32x4_t KAIXO_VECTORCALL to_float(simd_type a) { return vcvtq_f32_s32(a); }
+        KAIXO_INLINE static float32x4_t KAIXO_VECTORCALL as_float(simd_type a) { return vreinterpretq_f32_s32(a); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL add(simd_type a, simd_type b) { return vaddq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sub(simd_type a, simd_type b) { return vsubq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL mul(simd_type a, simd_type b) { return vmulq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL div(simd_type a, simd_type b) { return scalar_fallback<[](int a, int b){ return a / b; }>(a, b); }
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL negate(simd_type a) { return vnegq_s32(a); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_and(simd_type a, simd_type b) { return vandq_u32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_or(simd_type a, simd_type b) { return vorrq_u32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_xor(simd_type a, simd_type b) { return veorq_u32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_not(simd_type a) { return vmvnq_u32(a); }
+        
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_shift_left(simd_type a, int v) { return vshlq_n_s32(a, v); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_shift_right(simd_type a, int v) { return vshrq_n_s32(a, v); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_shift_left(simd_type a, simd_type v) { return vshlq_s32(a, v); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_shift_right(simd_type a, simd_type v) { return vshlq_s32(a, vnegq_s32(v)); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL eq(simd_type a, simd_type b) { return vceqq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL neq(simd_type a, simd_type b) { return bit_not(vceqq_s32(a, b)); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL gt(simd_type a, simd_type b) { return vcgtq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL gteq(simd_type a, simd_type b) { return vcgeq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL lt(simd_type a, simd_type b) { return vcltq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL lteq(simd_type a, simd_type b) { return vcleq_s32(a, b); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL min(simd_type a, simd_type b) { return vminq_s32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL max(simd_type a, simd_type b) { return vmaxq_s32(a, b); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL reverse(simd_type a) {
+            return vrev64q_s32(vcombine_s32(vget_high_s32(a), vget_low_s32(a)));
+        }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL blend(mask_type mask, simd_type a, simd_type b) {
+            return vbslq_s32(mask, a, b);
+        }
+
+        // ------------------------------------------------
+
+    };
+
+    // ------------------------------------------------
+
+    template<> struct simd_find_abi<float, 128> : std::type_identity<simd_float_128_neon> {};
+    template<> struct simd_find_abi<int, 128> : std::type_identity<simd_int_128_neon> {};
 
     // ------------------------------------------------
 
