@@ -21,6 +21,11 @@
 
 #if defined(_MSC_VER)
 #if KAIXO_SIMD_X86_64
+#if _MSC_VER >= 1933
+#define HAS_SVML_INTRINSICS 1
+#else
+#define HAS_SVML_INTRINSICS 0
+#endif
 #include <intrin.h>
 #elif KAIXO_SIMD_ARM
 #include <arm_neon.h>
@@ -31,6 +36,7 @@
 #define KAIXO_VECTORCALL
 #define KAIXO_INLINE
 #if KAIXO_SIMD_X86_64
+#define HAS_SVML_INTRINSICS 0
 #include <immintrin.h>
 #elif KAIXO_SIMD_ARM
 #include <arm_neon.h>
@@ -646,7 +652,31 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { return a.m256_f32[i]; }
+        template<float(*fun)(float)>
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
+            alignas(alignment) float vals[elements];
+            _mm256_store_ps(vals, a);
+            for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
+            return _mm256_load_ps(vals);
+        }
+
+        template<float(*fun)(float, float)>
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a, simd_type b) {
+            alignas(alignment) float valsa[elements];
+            alignas(alignment) float valsb[elements];
+            _mm256_store_ps(valsa, a);
+            _mm256_store_ps(valsb, b);
+            for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[i]);
+            return _mm256_load_ps(valsa);
+        }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { 
+            alignas(alignment) float tmp[8];
+            _mm256_store_ps(tmp, a);
+            return tmp[i];
+        }
 
         // ------------------------------------------------
 
@@ -731,7 +761,11 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+#if HAS_SVML_INTRINSICS
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL trunc(simd_type a) { return _mm256_trunc_ps(a); }
+#else
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL trunc(simd_type a) { return _mm256_round_ps(a, _MM_ROUND_TOWARD_ZERO | _MM_FROUND_NO_EXC); }
+#endif
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL floor(simd_type a) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL ceil(simd_type a) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL round(simd_type a) { return _mm256_round_ps(a, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC); }
@@ -747,10 +781,12 @@ namespace kaixo {
         // ------------------------------------------------
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL rcp(simd_type a) { return _mm256_rcp_ps(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sqrt(simd_type a) { return _mm256_sqrt_ps(a); }
+
+#if HAS_SVML_INTRINSICS
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return _mm256_log_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return _mm256_log2_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return _mm256_log10_ps(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sqrt(simd_type a) { return _mm256_sqrt_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return _mm256_cbrt_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return _mm256_exp_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return _mm256_exp2_ps(a); }
@@ -760,6 +796,20 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return _mm256_sin_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return _mm256_sinh_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return _mm256_pow_ps(a, b); }
+#else
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return scalar_fallback<&std::log>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return scalar_fallback<&std::log2>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return scalar_fallback<&std::log10>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return scalar_fallback<&std::cbrt>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return scalar_fallback<&std::exp>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return scalar_fallback<&std::exp2>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return scalar_fallback<&std::tanh>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return scalar_fallback<&std::cos>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return scalar_fallback<&std::cosh>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return scalar_fallback<&std::sin>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return scalar_fallback<&std::sinh>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return scalar_fallback<&std::pow>(a, b); }
+#endif
 
         // ------------------------------------------------
 
@@ -780,8 +830,8 @@ namespace kaixo {
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL noise() { 
             thread_local struct {
-                __m256i part1{ .m256i_u64 { 0xdb899e0994c4b301, 0x3f5abe6af2efd66e, 0x225316feba2bd4eb, 0xbe5ba0327ff5a462, } };
-                __m256i part2{ .m256i_u64 { 0x891627810c57c0dc, 0x8793773053862b5f, 0x6e041e1b9b54605a, 0x19d9edbb34011806, } };
+                __m256i part1 = _mm256_set_epi64x(0xdb899e0994c4b301, 0x3f5abe6af2efd66e, 0x225316feba2bd4eb, 0xbe5ba0327ff5a462);
+                __m256i part2 = _mm256_set_epi64x(0x891627810c57c0dc, 0x8793773053862b5f, 0x6e041e1b9b54605a, 0x19d9edbb34011806);
             } state;
 
             __m256i s1 = state.part1;
@@ -831,7 +881,11 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { return a.m256i_i32[i]; }
+        KAIXO_INLINE static value_type KAIXO_VECTORCALL index(simd_type a, std::size_t i) { 
+            alignas(alignment) int tmp[8];
+            _mm256_store_si256((__m256i*)tmp, a);
+            return tmp[i];
+        }
 
         // ------------------------------------------------
 
