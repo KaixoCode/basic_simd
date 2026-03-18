@@ -884,9 +884,9 @@ namespace kaixo {
         template<int(*fun)(int)>
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
             alignas(alignment) int vals[elements];
-            _mm256_store_si256(vals, a);
+            _mm256_store_si256((__m256i*)vals, a);
             for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
-            return _mm256_load_si256(vals);
+            return _mm256_load_si256((__m256i*)vals);
         }
 
         template<int(*fun)(int, int)>
