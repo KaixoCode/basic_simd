@@ -949,9 +949,9 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_and(simd_type a, simd_type b) { return _mm256_and_epi32(a, b); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_or(simd_type a, simd_type b) { return _mm256_or_epi32(a, b); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_xor(simd_type a, simd_type b) { return _mm256_xor_epi32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_and(simd_type a, simd_type b) { return _mm256_and_si256(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_or(simd_type a, simd_type b) { return _mm256_or_si256(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_xor(simd_type a, simd_type b) { return _mm256_xor_si256(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_not(simd_type a) { return _mm256_xor_si256(a, _mm256_set1_epi32(std::bit_cast<int>(0xFFFFFFFF))); }
         
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL bit_shift_left(simd_type a, int v) { return _mm256_slli_epi32(a, v); }
