@@ -278,7 +278,7 @@ namespace kaixo {
             vst1q_f32(vals, a);
             for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
             return vld1q_f32(vals);
-		}
+        }
 
         template<float(*fun)(float, float)> 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a, simd_type b) {
@@ -288,7 +288,7 @@ namespace kaixo {
             vst1q_f32(valsb, b);
             for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[i]);
             return vld1q_f32(valsa);
-		}
+        }
 
         // ------------------------------------------------
 
@@ -500,7 +500,7 @@ namespace kaixo {
             vst1q_s32(vals, a);
             for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
             return vld1q_s32(vals);
-		}
+        }
 
         template<int(*fun)(int, int)>
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a, simd_type b) {
@@ -510,7 +510,7 @@ namespace kaixo {
             vst1q_s32(valsb, b);
             for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[i]);
             return vld1q_s32(valsa);
-		}
+        }
 
         // ------------------------------------------------
 
