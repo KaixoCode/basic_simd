@@ -43,9 +43,28 @@
 #endif
 #endif
 
+#ifndef KAIXO_DO_CHECK_ALIGNMENT
+#define KAIXO_DO_CHECK_ALIGNMENT _DEBUG
+#endif // !KAIXO_DO_CHECK_ALIGNMENT
+
 // ------------------------------------------------
 
 namespace kaixo {
+
+    // ------------------------------------------------
+
+    template<std::size_t N, class T>
+    bool is_sufficiently_aligned(T* ptr) {
+        return std::bit_cast<std::uintptr_t>(ptr) % N == 0;
+    }
+
+    // ------------------------------------------------
+
+#if KAIXO_DO_CHECK_ALIGNMENT
+#define KAIXO_CHECK_ALIGNMENT(ptr, align) do { if(!is_sufficiently_aligned<align>(ptr)) { std::terminate(); } } while(0)
+#else
+#define KAIXO_CHECK_ALIGNMENT(ptr, align)
+#endif
 
     // ------------------------------------------------
 
@@ -689,13 +708,13 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL load(const_buffer_type data) { return _mm256_load_ps(data); };
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadr(const_buffer_type data) { return _mm256_set_ps(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]); };
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadu(const_buffer_type data) { return _mm256_loadu_ps(data); };
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL load(const_buffer_type data) { return _mm256_load_ps(data); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadr(const_buffer_type data) { return _mm256_set_ps(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL loadu(const_buffer_type data) { return _mm256_loadu_ps(data); }
 
-        KAIXO_INLINE static void KAIXO_VECTORCALL store(buffer_type to, simd_type from) { _mm256_store_ps(to, from); };
-        KAIXO_INLINE static void KAIXO_VECTORCALL storeu(buffer_type to, simd_type from) { _mm256_storeu_ps(to, from); };
-        KAIXO_INLINE static void KAIXO_VECTORCALL stream(buffer_type to, simd_type from) { _mm256_stream_ps(to, from); };
+        KAIXO_INLINE static void KAIXO_VECTORCALL store(buffer_type to, simd_type from) { _mm256_store_ps(to, from); }
+        KAIXO_INLINE static void KAIXO_VECTORCALL storeu(buffer_type to, simd_type from) { _mm256_storeu_ps(to, from); }
+        KAIXO_INLINE static void KAIXO_VECTORCALL stream(buffer_type to, simd_type from) { _mm256_stream_ps(to, from); }
 
         // ------------------------------------------------
 
@@ -1000,6 +1019,7 @@ namespace kaixo {
     // ------------------------------------------------
 
 #define KAIXO_FROM_ABI(x) requires requires { Abi::x; } { return Abi::x; }
+#define KAIXO_ALIGNED_FROM_ABI(x, ptr) requires requires { Abi::x; } { KAIXO_CHECK_ALIGNMENT(ptr, alignment); return Abi::x; }
 
     // ------------------------------------------------
 
@@ -1102,20 +1122,20 @@ namespace kaixo {
 
         // ------------------------------------------------
 
-        KAIXO_INLINE static basic_simd load(const_buffer_type data) KAIXO_FROM_ABI(load(data));
+        KAIXO_INLINE static basic_simd load(const_buffer_type data) KAIXO_ALIGNED_FROM_ABI(load(data), data);
         KAIXO_INLINE static basic_simd loadr(const_buffer_type data) KAIXO_FROM_ABI(loadr(data));
         KAIXO_INLINE static basic_simd loadu(const_buffer_type data) KAIXO_FROM_ABI(loadu(data));
 
-        KAIXO_INLINE void store(buffer_type to) const KAIXO_FROM_ABI(store(to, value));
+        KAIXO_INLINE void store(buffer_type to) const KAIXO_ALIGNED_FROM_ABI(store(to, value), to);
         KAIXO_INLINE void storeu(buffer_type to) const KAIXO_FROM_ABI(storeu(to, value));
-        KAIXO_INLINE void stream(buffer_type to) const KAIXO_FROM_ABI(stream(to, value));
+        KAIXO_INLINE void stream(buffer_type to) const KAIXO_ALIGNED_FROM_ABI(stream(to, value), to);
 
-        KAIXO_INLINE static void store(buffer_type to, const basic_simd& from) KAIXO_FROM_ABI(store(to, from));
+        KAIXO_INLINE static void store(buffer_type to, const basic_simd& from) KAIXO_ALIGNED_FROM_ABI(store(to, from), to);
         KAIXO_INLINE static void storeu(buffer_type to, const basic_simd& from) KAIXO_FROM_ABI(storeu(to, from));
-        KAIXO_INLINE static void stream(buffer_type to, const basic_simd& from) KAIXO_FROM_ABI(stream(to, from));
+        KAIXO_INLINE static void stream(buffer_type to, const basic_simd& from) KAIXO_ALIGNED_FROM_ABI(stream(to, from), to);
 
         KAIXO_INLINE static void store(buffer_type to, value_type from) { store(to, set1(from)); }
-        KAIXO_INLINE static void storeu(buffer_type to, value_type from) { store(to, set1(from)); }
+        KAIXO_INLINE static void storeu(buffer_type to, value_type from) { storeu(to, set1(from)); }
 
         KAIXO_INLINE auto gather(const float* data) const -> basic_simd<float, typename simd_find_abi<float, bits>::type> KAIXO_FROM_ABI(gather(data, value));
         KAIXO_INLINE auto gather(const int* data) const -> basic_simd<int, typename simd_find_abi<int, bits>::type> KAIXO_FROM_ABI(gather(data, value));
