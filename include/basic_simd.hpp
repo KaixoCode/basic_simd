@@ -174,6 +174,8 @@ namespace kaixo {
         
         KAIXO_INLINE static simd_type min(simd_type a, simd_type b) { return a < b ? a : b; }
         KAIXO_INLINE static simd_type max(simd_type a, simd_type b) { return a < b ? b : a; }
+        KAIXO_INLINE static simd_type sign_min(simd_type a, simd_type b) { return abs(a) < abs(b) ? a : b; }
+        KAIXO_INLINE static simd_type sign_max(simd_type a, simd_type b) { return abs(a) < abs(b) ? b : a; }
 
         // ------------------------------------------------
 
@@ -380,6 +382,8 @@ namespace kaixo {
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL min(simd_type a, simd_type b) { return vminq_f32(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL max(simd_type a, simd_type b) { return vmaxq_f32(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign_min(simd_type a, simd_type b) { return blend(lt(abs(a), abs(b)), a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign_max(simd_type a, simd_type b) { return blend(lt(abs(a), abs(b)), b, a); }
 
         // ------------------------------------------------
 
@@ -755,6 +759,8 @@ namespace kaixo {
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL min(simd_type a, simd_type b) { return _mm256_min_ps(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL max(simd_type a, simd_type b) { return _mm256_max_ps(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign_min(simd_type a, simd_type b) { return blend(lt(abs(a), abs(b)), a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign_max(simd_type a, simd_type b) { return blend(lt(abs(a), abs(b)), b, a); }
 
         // ------------------------------------------------
 
@@ -1220,6 +1226,8 @@ namespace kaixo {
         
         KAIXO_INLINE static basic_simd min(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(min(a, b));
         KAIXO_INLINE static basic_simd max(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(max(a, b));
+        KAIXO_INLINE static basic_simd sign_min(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(sign_min(a, b));
+        KAIXO_INLINE static basic_simd sign_max(const basic_simd& a, const basic_simd& b) KAIXO_FROM_ABI(sign_max(a, b));
 
         // ------------------------------------------------
 
