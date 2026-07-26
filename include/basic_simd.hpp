@@ -1067,7 +1067,9 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE friend basic_simd_mask operator&(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_and(a.value, b.value));
         KAIXO_INLINE friend basic_simd_mask operator&&(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_and(a.value, b.value));
+        KAIXO_INLINE friend basic_simd_mask operator|(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_or(a.value, b.value));
         KAIXO_INLINE friend basic_simd_mask operator||(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_or(a.value, b.value));
         KAIXO_INLINE friend basic_simd_mask operator~(const basic_simd_mask& a) KAIXO_FROM_ABI(bit_not(a.value));
         KAIXO_INLINE friend basic_simd_mask operator!(const basic_simd_mask& a) KAIXO_FROM_ABI(bit_not(a.value));
