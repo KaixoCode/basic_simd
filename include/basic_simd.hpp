@@ -1067,6 +1067,23 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE static basic_simd_mask load(const_buffer_type data) KAIXO_ALIGNED_FROM_ABI(load(data), data);
+        KAIXO_INLINE static basic_simd_mask loadr(const_buffer_type data) KAIXO_FROM_ABI(loadr(data));
+        KAIXO_INLINE static basic_simd_mask loadu(const_buffer_type data) KAIXO_FROM_ABI(loadu(data));
+
+        KAIXO_INLINE void store(buffer_type to) const KAIXO_ALIGNED_FROM_ABI(store(to, value), to);
+        KAIXO_INLINE void storeu(buffer_type to) const KAIXO_FROM_ABI(storeu(to, value));
+        KAIXO_INLINE void stream(buffer_type to) const KAIXO_ALIGNED_FROM_ABI(stream(to, value), to);
+
+        KAIXO_INLINE static void store(buffer_type to, const basic_simd_mask& from) KAIXO_ALIGNED_FROM_ABI(store(to, from.value), to);
+        KAIXO_INLINE static void storeu(buffer_type to, const basic_simd_mask& from) KAIXO_FROM_ABI(storeu(to, from.value));
+        KAIXO_INLINE static void stream(buffer_type to, const basic_simd_mask& from) KAIXO_ALIGNED_FROM_ABI(stream(to, from.value), to);
+
+        KAIXO_INLINE static void store(buffer_type to, value_type from) { store(to, set1(from)); }
+        KAIXO_INLINE static void storeu(buffer_type to, value_type from) { storeu(to, set1(from)); }
+
+        // ------------------------------------------------
+
         KAIXO_INLINE friend basic_simd_mask operator&(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_and(a.value, b.value));
         KAIXO_INLINE friend basic_simd_mask operator&&(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_and(a.value, b.value));
         KAIXO_INLINE friend basic_simd_mask operator|(const basic_simd_mask& a, const basic_simd_mask& b) KAIXO_FROM_ABI(bit_or(a.value, b.value));
