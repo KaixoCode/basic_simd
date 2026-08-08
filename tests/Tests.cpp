@@ -72,7 +72,7 @@ namespace kaixo::test {
             EXPECT_EQ(val[i], data[val.elements - i - 1]);
         }
 
-        float buffer[16]{};
+        alignas(simd_256::alignment) float buffer[16]{};
 
         val = simd_256::load(data);
         val.store(buffer);
@@ -345,7 +345,7 @@ namespace kaixo::test {
             EXPECT_EQ(val[i], data[val.elements - i - 1]);
         }
 
-        int buffer[16]{};
+        alignas(simd_256i::alignment) int buffer[16]{};
 
         val = simd_256i::load(data);
         val.store(buffer);
