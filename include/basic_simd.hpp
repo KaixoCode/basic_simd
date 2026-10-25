@@ -34,7 +34,7 @@
 #define KAIXO_INLINE __forceinline
 #elif defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
 #define KAIXO_VECTORCALL
-#define KAIXO_INLINE
+#define KAIXO_INLINE inline
 #if KAIXO_SIMD_X86_64
 #define HAS_SVML_INTRINSICS 0
 #include <immintrin.h>
