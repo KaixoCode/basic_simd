@@ -55,6 +55,9 @@ add_dependencies(basic_simd_tests gtest)
 target_include_directories(basic_simd_tests
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_definitions(basic_simd_tests
+    PRIVATE
+        KAIXO_SIMD_DISABLE_SVML)
 target_link_libraries(basic_simd_tests GTest::GTest)
 
 add_test(basic_simd_tests_gtests basic_simd_tests)

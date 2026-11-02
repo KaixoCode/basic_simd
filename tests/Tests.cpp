@@ -400,6 +400,59 @@ namespace kaixo::test {
         }
     }
 
+    TEST(BasicFloatTests, InverseTrigonometricOperations) {
+        std::mt19937 random(0xA51A);
+        std::uniform_real_distribution<float> unit_input(-1.f, 1.f);
+        std::uniform_real_distribution<float> atan2_input(-10.f, 10.f);
+        alignas(simd_256::alignment) float values[simd_256::elements];
+        alignas(simd_256::alignment) float y_values[simd_256::elements];
+        alignas(simd_256::alignment) float x_values[simd_256::elements];
+        constexpr float boundary_values[]{ -1.f, -0.75f, -0.5f, 0.f, 0.5f, 0.75f, 1.f, 0.25f };
+        constexpr float boundary_y[]{ -10.f, -1.f, 0.f, 1.f, 10.f, 0.f, 1.f, -1.f };
+        constexpr float boundary_x[]{ -10.f, -10.f, -10.f, -10.f, -10.f, 1.f, 0.f, 0.f };
+
+        for (int iteration = 0; iteration < 128; ++iteration) {
+            for (std::size_t lane = 0; lane < simd_256::elements; ++lane) {
+                values[lane] = iteration == 0 ? boundary_values[lane] : unit_input(random);
+                y_values[lane] = iteration == 0 ? boundary_y[lane] : atan2_input(random);
+                x_values[lane] = iteration == 0 ? boundary_x[lane] : atan2_input(random);
+            }
+
+            const auto inputs = simd_256::load(values);
+            const auto y = simd_256::load(y_values);
+            const auto x = simd_256::load(x_values);
+            const auto asin_values = simd_256::asin(inputs);
+            const auto instance_asin_values = inputs.asin();
+            const auto acos_values = inputs.acos();
+            const auto static_acos_values = simd_256::acos(inputs);
+            const auto atan2_values = y.atan2(x);
+            const auto static_atan2_values = simd_256::atan2(y, x);
+            for (std::size_t lane = 0; lane < simd_256::elements; ++lane) {
+                expect_math_near(asin_values[lane], std::asin(values[lane]));
+                expect_math_near(instance_asin_values[lane], std::asin(values[lane]));
+                expect_math_near(acos_values[lane], std::acos(values[lane]));
+                expect_math_near(static_acos_values[lane], std::acos(values[lane]));
+                expect_math_near(atan2_values[lane], std::atan2(y_values[lane], x_values[lane]));
+                expect_math_near(static_atan2_values[lane], std::atan2(y_values[lane], x_values[lane]));
+            }
+        }
+
+        using scalar_simd = basic_simd<float, simd_scalar_fallback_abi<float>>;
+        expect_math_near(scalar_simd::asin(scalar_simd::set1(0.5f))[0], std::asin(0.5f));
+        expect_math_near(scalar_simd::acos(scalar_simd::set1(-0.5f))[0], std::acos(-0.5f));
+        expect_math_near(scalar_simd::atan2(scalar_simd::set1(1.f), scalar_simd::set1(-1.f))[0], std::atan2(1.f, -1.f));
+
+        alignas(simd_256::alignment) float signed_zero_y[]{ -0.f, 0.f, -0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+        alignas(simd_256::alignment) float signed_zero_x[]{ 0.f, 0.f, -0.f, -0.f, -1.f, 1.f, -1.f, 1.f };
+        const auto signed_zero_angles = simd_256::atan2(
+            simd_256::load(signed_zero_y), simd_256::load(signed_zero_x));
+        for (std::size_t lane = 0; lane < simd_256::elements; ++lane) {
+            const auto expected = std::atan2(signed_zero_y[lane], signed_zero_x[lane]);
+            expect_math_near(signed_zero_angles[lane], expected);
+            EXPECT_EQ(std::signbit(signed_zero_angles[lane]), std::signbit(expected));
+        }
+    }
+
 #if defined(_MSC_VER) && _MSC_VER >= 1933
     TEST(BasicFloatTests, MathOperationsMatchSvml) {
         alignas(simd_256::alignment) float input[]{ 0.125f, 0.5f, 0.75f, 1.f, 1.5f, 2.f, 4.f, 8.f };
@@ -430,6 +483,16 @@ namespace kaixo::test {
         compare(values.sin(), _mm256_sin_ps(input_vector));
         compare(values.sinh(), _mm256_sinh_ps(input_vector));
         compare(values.pow(powers_input), _mm256_pow_ps(input_vector, exponent_vector));
+
+        alignas(simd_256::alignment) float inverse_trig_input[]{ -1.f, -0.75f, -0.5f, 0.f, 0.25f, 0.5f, 0.75f, 1.f };
+        alignas(simd_256::alignment) float atan2_y[]{ -10.f, -1.f, 0.f, 1.f, 10.f, 0.f, 1.f, -1.f };
+        alignas(simd_256::alignment) float atan2_x[]{ -10.f, -10.f, -10.f, -10.f, -10.f, 1.f, 0.f, 0.f };
+        const auto inverse_trig_values = simd_256::load(inverse_trig_input);
+        const auto y_values = simd_256::load(atan2_y);
+        const auto x_values = simd_256::load(atan2_x);
+        compare(inverse_trig_values.asin(), _mm256_asin_ps(_mm256_load_ps(inverse_trig_input)));
+        compare(inverse_trig_values.acos(), _mm256_acos_ps(_mm256_load_ps(inverse_trig_input)));
+        compare(y_values.atan2(x_values), _mm256_atan2_ps(_mm256_load_ps(atan2_y), _mm256_load_ps(atan2_x)));
     }
 
     TEST(BasicFloatTests, SvmlDocumentedRanges) {
@@ -483,6 +546,19 @@ namespace kaixo::test {
             compare(values.sin(), _mm256_sin_ps(input_vector), "sin", input);
             compare(values.cos(), _mm256_cos_ps(input_vector), "cos", input);
         };
+        const auto compare_atrigonometry = [&](float input) {
+            std::fill(std::begin(inputs), std::end(inputs), input);
+            const auto values = simd_256::load(inputs);
+            const auto input_vector = _mm256_load_ps(inputs);
+            compare(values.asin(), _mm256_asin_ps(input_vector), "asin", input);
+            compare(values.acos(), _mm256_acos_ps(input_vector), "acos", input);
+        };
+        const auto compare_atan2 = [&](float input) {
+            std::fill(std::begin(inputs), std::end(inputs), input);
+            const auto values = simd_256::load(inputs);
+            const auto input_vector = _mm256_load_ps(inputs);
+            compare(simd_256::atan2(values, values), _mm256_atan2_ps(input_vector, input_vector), "atan2", input);
+        };
         const auto compare_logarithm = [&](float input) {
             std::fill(std::begin(inputs), std::end(inputs), input);
             const auto values = simd_256::load(inputs);
@@ -502,6 +578,12 @@ namespace kaixo::test {
             compare_trigonometry(angle);
             if (!comparisons_passed) break;
             compare_trigonometry(30000.f * static_cast<float>(sample) / 4096.f);
+            if (!comparisons_passed) break;
+
+            compare_atrigonometry(-1.f + 2.f * static_cast<float>(sample) / 4096.f);
+            if (!comparisons_passed) break;
+
+            compare_atan2(-10.f + 20.f * static_cast<float>(sample) / 4096.f);
             if (!comparisons_passed) break;
 
             const float exponent = -100.f + 200.f * static_cast<float>(sample) / 4096.f;
