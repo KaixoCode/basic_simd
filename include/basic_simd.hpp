@@ -9,6 +9,7 @@
 #include <numeric>
 #include <cmath>
 #include <cstdint>
+#include <utility>
 
 // ------------------------------------------------
 
@@ -22,7 +23,11 @@
 #if defined(_MSC_VER)
 #if KAIXO_SIMD_X86_64
 #if _MSC_VER >= 1933
+#if defined(KAIXO_SIMD_DISABLE_SVML)
+#define HAS_SVML_INTRINSICS 0
+#else
 #define HAS_SVML_INTRINSICS 1
+#endif
 #else
 #define HAS_SVML_INTRINSICS 0
 #endif
@@ -50,6 +55,35 @@
 // ------------------------------------------------
 
 namespace kaixo {
+
+    // ------------------------------------------------
+
+    template<class T, std::size_t Bits>
+    struct simd_find_abi;
+
+    template<class Abi>
+    struct simd_math_approximation {
+        using simd_type = typename Abi::simd_type;
+
+        static simd_type log(simd_type a);
+        static simd_type log2(simd_type a);
+        static simd_type log10(simd_type a);
+        static simd_type cbrt(simd_type a);
+        static simd_type exp(simd_type a);
+        static simd_type exp2(simd_type a);
+        static simd_type exp10(simd_type a);
+        static simd_type tanh(simd_type a);
+        static simd_type cos(simd_type a);
+        static simd_type cosh(simd_type a);
+        static simd_type sin(simd_type a);
+        static simd_type sinh(simd_type a);
+        static simd_type pow(simd_type a, simd_type b);
+
+    private:
+        static simd_type constant(float value);
+        static simd_type exp2_poly(simd_type a);
+        static std::pair<simd_type, simd_type> sincos_poly(simd_type a);
+    };
 
     // ------------------------------------------------
 
@@ -297,7 +331,7 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
             float vals[elements];
             vst1q_f32(vals, a);
-            for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
+            for (std::size_t i = 0; i < elements; ++i) vals[i] = fun(vals[i]);
             return vld1q_f32(vals);
         }
 
@@ -307,7 +341,7 @@ namespace kaixo {
             float valsb[elements];
             vst1q_f32(valsa, a);
             vst1q_f32(valsb, b);
-            for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[i]);
+            for (std::size_t i = 0; i < elements; ++i) valsa[i] = fun(valsa[i], valsb[i]);
             return vld1q_f32(valsa);
         }
 
@@ -421,19 +455,20 @@ namespace kaixo {
             return vmulq_f32(x, vrecpsq_f32(a, x));
         }
         
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return scalar_fallback<&std::log>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return scalar_fallback<&std::log2>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return scalar_fallback<&std::log10>(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return simd_math_approximation<simd_float_128_neon>::log(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return simd_math_approximation<simd_float_128_neon>::log2(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return simd_math_approximation<simd_float_128_neon>::log10(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sqrt(simd_type a) { return vsqrtq_f32(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return scalar_fallback<&std::cbrt>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return scalar_fallback<&std::exp>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return scalar_fallback<&std::exp2>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return scalar_fallback<&std::tanh>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return scalar_fallback<&std::cos>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return scalar_fallback<&std::cosh>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return scalar_fallback<&std::sin>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return scalar_fallback<&std::sinh>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return scalar_fallback<&std::pow>(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return simd_math_approximation<simd_float_128_neon>::cbrt(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return simd_math_approximation<simd_float_128_neon>::exp(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return simd_math_approximation<simd_float_128_neon>::exp2(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp10(simd_type a) { return simd_math_approximation<simd_float_128_neon>::exp10(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return simd_math_approximation<simd_float_128_neon>::tanh(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return simd_math_approximation<simd_float_128_neon>::cos(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return simd_math_approximation<simd_float_128_neon>::cosh(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return simd_math_approximation<simd_float_128_neon>::sin(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return simd_math_approximation<simd_float_128_neon>::sinh(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return simd_math_approximation<simd_float_128_neon>::pow(a, b); }
 
         // ------------------------------------------------
 
@@ -521,7 +556,7 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
             int vals[elements];
             vst1q_s32(vals, a);
-            for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
+            for (std::size_t i = 0; i < elements; ++i) vals[i] = fun(vals[i]);
             return vld1q_s32(vals);
         }
 
@@ -531,7 +566,7 @@ namespace kaixo {
             int valsb[elements];
             vst1q_s32(valsa, a);
             vst1q_s32(valsb, b);
-            for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[i]);
+            for (std::size_t i = 0; i < elements; ++i) valsa[i] = fun(valsa[i], valsb[i]);
             return vld1q_s32(valsa);
         }
 
@@ -679,7 +714,7 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
             alignas(alignment) float vals[elements];
             _mm256_store_ps(vals, a);
-            for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
+            for (std::size_t i = 0; i < elements; ++i) vals[i] = fun(vals[i]);
             return _mm256_load_ps(vals);
         }
 
@@ -689,7 +724,7 @@ namespace kaixo {
             alignas(alignment) float valsb[elements];
             _mm256_store_ps(valsa, a);
             _mm256_store_ps(valsb, b);
-            for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[i]);
+            for (std::size_t i = 0; i < elements; ++i) valsa[i] = fun(valsa[i], valsb[i]);
             return _mm256_load_ps(valsa);
         }
 
@@ -815,6 +850,7 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return _mm256_cbrt_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return _mm256_exp_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return _mm256_exp2_ps(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp10(simd_type a) { return _mm256_pow_ps(_mm256_set1_ps(10.f), a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return _mm256_tanh_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return _mm256_cos_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return _mm256_cosh_ps(a); }
@@ -822,18 +858,19 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return _mm256_sinh_ps(a); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return _mm256_pow_ps(a, b); }
 #else
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return scalar_fallback<&std::log>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return scalar_fallback<&std::log2>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return scalar_fallback<&std::log10>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return scalar_fallback<&std::cbrt>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return scalar_fallback<&std::exp>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return scalar_fallback<&std::exp2>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return scalar_fallback<&std::tanh>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return scalar_fallback<&std::cos>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return scalar_fallback<&std::cosh>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return scalar_fallback<&std::sin>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return scalar_fallback<&std::sinh>(a); }
-        KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return scalar_fallback<&std::pow>(a, b); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::log(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log2(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::log2(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL log10(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::log10(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cbrt(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::cbrt(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::exp(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp2(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::exp2(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL exp10(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::exp10(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL tanh(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::tanh(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cos(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::cos(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL cosh(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::cosh(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sin(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::sin(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL sinh(simd_type a) { return simd_math_approximation<simd_float_256_x86_64>::sinh(a); }
+        KAIXO_INLINE static simd_type KAIXO_VECTORCALL pow(simd_type a, simd_type b) { return simd_math_approximation<simd_float_256_x86_64>::pow(a, b); }
 #endif
 
         // ------------------------------------------------
@@ -910,7 +947,7 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL scalar_fallback(simd_type a) {
             alignas(alignment) int vals[elements];
             _mm256_store_si256((__m256i*)vals, a);
-            for (int i = 0; i < 4; i++) vals[i] = fun(vals[i]);
+            for (std::size_t i = 0; i < elements; ++i) vals[i] = fun(vals[i]);
             return _mm256_load_si256((__m256i*)vals);
         }
 
@@ -920,7 +957,7 @@ namespace kaixo {
             alignas(alignment) int valsb[elements];
             _mm256_store_si256((__m256i*)valsa, a);
             _mm256_store_si256((__m256i*)valsb, b);
-            for (int i = 0; i < 4; i++) valsa[i] = fun(valsa[i], valsb[i]);
+            for (std::size_t i = 0; i < elements; ++i) valsa[i] = fun(valsa[i], valsb[i]);
             return _mm256_load_si256((__m256i*)valsa);
         }
 
@@ -1021,6 +1058,248 @@ namespace kaixo {
     // ------------------------------------------------
 
 #endif
+
+    // ------------------------------------------------
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::constant(float value) {
+        return Abi::set1(value);
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::exp2_poly(simd_type a) {
+        using int_abi = typename simd_find_abi<int, Abi::bytes * 8>::type;
+        // n = floor(a), f = a - n; exp2(a) ~= 2^n * sum(k=0..12, (ln(2)*f)^k / k!).
+        // The power-of-two scale is assembled from IEEE-754 exponent bits, including subnormals.
+        const auto whole = Abi::floor(a);
+        const auto integer = Abi::to_int(whole);
+        const auto fraction = Abi::sub(a, int_abi::to_float(integer));
+
+        auto polynomial = constant(2.558737454899927e-11f);
+        polynomial = Abi::fmadd(polynomial, fraction, constant(4.44553827187081e-10f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(7.054911620801123e-9f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(1.0178086009239695e-7f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(1.3215486790144305e-6f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(1.525273380405984e-5f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(1.54035303933816e-4f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(1.3333558146428443e-3f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(9.618129107628477e-3f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(5.550410866482158e-2f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(2.402265069591007e-1f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(6.931471805599453e-1f));
+        polynomial = Abi::fmadd(polynomial, fraction, constant(1.f));
+
+        const auto normal_exponent = int_abi::max(integer, int_abi::set1(-126));
+        const auto normal_scale_bits = int_abi::bit_shift_left(int_abi::add(normal_exponent, int_abi::set1(127)), 23);
+        const auto subnormal_exponent = int_abi::max(integer, int_abi::set1(-149));
+        const auto subnormal_scale_bits = int_abi::bit_shift_left(int_abi::set1(1), int_abi::add(subnormal_exponent, int_abi::set1(149)));
+        const auto subnormal_mask = Abi::lt(whole, constant(-126.f));
+        auto scale = Abi::blend(subnormal_mask, int_abi::as_float(subnormal_scale_bits), int_abi::as_float(normal_scale_bits));
+        scale = Abi::blend(Abi::lt(whole, constant(-149.f)), constant(0.f), scale);
+        return Abi::mul(polynomial, scale);
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::log2(simd_type a) {
+        using int_abi = typename simd_find_abi<int, Abi::bytes * 8>::type;
+        // Normalize a = m * 2^e, 1 <= m < 2; let y = (m - 1)/(m + 1).
+        // log2(a) ~= e + (2/ln(2)) * sum(k=0..8, y^(2k+1)/(2k+1)).
+        const auto bits = Abi::as_int(a);
+        auto normalized_bits = bits;
+        const auto raw_exponent = int_abi::bit_and(int_abi::bit_shift_right(bits, 23), int_abi::set1(0xff));
+        const auto subnormal_mask = int_abi::eq(raw_exponent, int_abi::setzero());
+        const auto scaled_subnormal_bits = Abi::as_int(Abi::mul(a, constant(8388608.f)));
+        normalized_bits = int_abi::blend(subnormal_mask, scaled_subnormal_bits, normalized_bits);
+        const auto exponent = int_abi::bit_and(int_abi::bit_shift_right(normalized_bits, 23), int_abi::set1(0xff));
+        const auto exponent_adjustment = int_abi::blend(subnormal_mask, int_abi::set1(23), int_abi::setzero());
+        const auto mantissa_bits = int_abi::bit_or(int_abi::bit_and(normalized_bits, int_abi::set1(0x007fffff)), int_abi::set1(0x3f800000));
+        const auto mantissa = int_abi::as_float(mantissa_bits);
+        const auto y = Abi::div(Abi::sub(mantissa, constant(1.f)), Abi::add(mantissa, constant(1.f))); 
+        const auto y_squared = Abi::mul(y, y);
+
+        auto term = y;
+        auto sum = y;
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 3.f), sum);
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 5.f), sum);
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 7.f), sum);
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 9.f), sum);
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 11.f), sum);
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 13.f), sum);
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 15.f), sum);
+        term = Abi::mul(term, y_squared);
+        sum = Abi::fmadd(term, constant(1.f / 17.f), sum);
+
+        const auto exponent_value = int_abi::to_float(int_abi::sub(int_abi::sub(exponent, int_abi::set1(127)), exponent_adjustment));
+        const auto result = Abi::add(exponent_value, Abi::mul(Abi::mul(constant(2.f), sum), constant(1.4426950408889634f)));
+        const auto zero_mask = int_abi::eq(bits, int_abi::setzero());
+        const auto negative_infinity = int_abi::as_float(int_abi::set1(std::bit_cast<int>(0xff800000u)));
+        return Abi::blend(int_abi::as_float(zero_mask), negative_infinity, result);
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::log(simd_type a) {
+        // ln(a) = ln(2) * log2(a).
+        return Abi::mul(log2(a), constant(0.6931471805599453f));
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::log10(simd_type a) {
+        // log10(a) = log10(2) * log2(a).
+        return Abi::mul(log2(a), constant(0.3010299956639812f));
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::exp2(simd_type a) {
+        // Evaluate the degree-12 fractional-part polynomial in exp2_poly: 2^a.
+        return exp2_poly(a);
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::exp(simd_type a) {
+        // exp(a) = 2^(a*log2(e)); the split multiplier preserves precision in the conversion.
+        const auto scaled = Abi::fmadd(a, constant(1.9259629911266175e-8f), Abi::mul(a, constant(1.4426950216293335f))); 
+        return exp2_poly(scaled);
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::exp10(simd_type a) {
+        // 10^a = 2^(a*log2(10)).
+        return exp2_poly(Abi::mul(a, constant(3.3219280948873623f)));
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::cbrt(simd_type a) {
+        // cbrt(a) = sign(a) * 2^(log2(abs(a))/3); zero is restored after the log conversion.
+        const auto magnitude = Abi::abs(a);
+        auto result = exp2_poly(Abi::mul(log2(magnitude), constant(1.f / 3.f)));
+        result = Abi::blend(Abi::eq(a, constant(0.f)), constant(0.f), result);
+        return Abi::xorsign(a, result);
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::tanh(simd_type a) {
+        // tanh(a) = sign(a) * (1 - exp(-2*abs(a))) / (1 + exp(-2*abs(a))).
+        const auto magnitude = Abi::abs(a);
+        const auto exponential = exp2_poly(Abi::mul(Abi::mul(magnitude, constant(-2.f)), constant(1.4426950408889634f))); 
+        const auto result = Abi::div(Abi::sub(constant(1.f), exponential), Abi::add(constant(1.f), exponential));
+        return Abi::xorsign(a, result);
+    }
+
+    template<class Abi>
+    std::pair<typename simd_math_approximation<Abi>::simd_type,
+              typename simd_math_approximation<Abi>::simd_type>
+    simd_math_approximation<Abi>::sincos_poly(simd_type a) {
+        using int_abi = typename simd_find_abi<int, Abi::bytes * 8>::type;
+        // q = round(2*a/pi), r = a - q*pi/2 (split pi/2 constants reduce cancellation).
+        // sin(r) ~= r + r^3*(-1/3! + r^2*(1/5! + ... + r^14/17!)).
+        // cos(r) ~= 1 + r^2*(-1/2! + r^2*(1/4! + ... + r^10/12!)).
+        // Remap signs and sine/cosine according to q modulo four.
+        const auto quadrant_float = Abi::round(Abi::mul(a, constant(0.6366197723675814f)));
+        const auto quadrant = Abi::to_int(quadrant_float);
+        const auto quadrant_as_float = int_abi::to_float(quadrant);
+        auto reduced = Abi::fmadd(Abi::negate(quadrant_as_float), constant(1.5707962512969971f), a);
+        reduced = Abi::fmadd(Abi::negate(quadrant_as_float), constant(7.549789415861596e-8f), reduced);
+
+        const auto squared = Abi::mul(reduced, reduced);
+
+        auto sine_polynomial = constant(-7.647163731819816e-13f);
+        sine_polynomial = Abi::fmadd(sine_polynomial, squared, constant(1.6059043836821613e-10f));
+        sine_polynomial = Abi::fmadd(sine_polynomial, squared, constant(-2.505210838544172e-8f));
+        sine_polynomial = Abi::fmadd(sine_polynomial, squared, constant(2.7557319223985893e-6f));
+        sine_polynomial = Abi::fmadd(sine_polynomial, squared, constant(-1.984126984126984e-4f));
+        sine_polynomial = Abi::fmadd(sine_polynomial, squared, constant(8.333333333333333e-3f));
+        sine_polynomial = Abi::fmadd(sine_polynomial, squared, constant(-1.6666666666666666e-1f));
+        const auto sine = Abi::fmadd(Abi::mul(reduced, squared), sine_polynomial, reduced);
+
+        auto cosine_polynomial = constant(2.08767569878681e-9f);
+        cosine_polynomial = Abi::fmadd(cosine_polynomial, squared, constant(-2.755731922398589e-7f));
+        cosine_polynomial = Abi::fmadd(cosine_polynomial, squared, constant(2.48015873015873e-5f));
+        cosine_polynomial = Abi::fmadd(cosine_polynomial, squared, constant(-1.388888888888889e-3f));
+        cosine_polynomial = Abi::fmadd(cosine_polynomial, squared, constant(4.166666666666667e-2f));
+        cosine_polynomial = Abi::fmadd(cosine_polynomial, squared, constant(-0.5f));
+        const auto cosine = Abi::fmadd(squared, cosine_polynomial, constant(1.f));
+
+        const auto odd_quadrant = int_abi::bit_and(quadrant, int_abi::set1(1));
+        const auto second_bit = int_abi::bit_and(quadrant, int_abi::set1(2));
+        const auto is_odd = int_abi::as_float(int_abi::eq(odd_quadrant, int_abi::set1(1)));
+        const auto is_second = int_abi::as_float(int_abi::eq(second_bit, int_abi::set1(2)));
+        auto sine_result = Abi::blend(is_odd, cosine, sine);
+        sine_result = Abi::blend(is_second, Abi::negate(sine_result), sine_result);
+
+        const auto cosine_negative = int_abi::as_float(int_abi::bit_xor(int_abi::eq(odd_quadrant, int_abi::set1(1)), int_abi::eq(second_bit, int_abi::set1(2))));
+        auto cosine_result = Abi::blend(is_odd, sine, cosine);
+        cosine_result = Abi::blend(cosine_negative, Abi::negate(cosine_result), cosine_result);
+        return { sine_result, cosine_result };
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::sin(simd_type a) {
+        // Return the sine component of the shared range-reduced polynomial evaluation.
+        return sincos_poly(a).first;
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::cos(simd_type a) {
+        // Return the cosine component of the shared range-reduced polynomial evaluation.
+        return sincos_poly(a).second;
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::sinh(simd_type a) {
+        // sinh(a) = (exp(a) - exp(-a))/2.
+        const auto positive = exp2_poly(Abi::mul(a, constant(1.4426950408889634f)));
+        const auto negative = exp2_poly(Abi::mul(Abi::negate(a), constant(1.4426950408889634f)));
+        return Abi::mul(Abi::sub(positive, negative), constant(0.5f));
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::cosh(simd_type a) {
+        // cosh(a) = (exp(a) + exp(-a))/2.
+        const auto positive = exp2_poly(Abi::mul(a, constant(1.4426950408889634f)));
+        const auto negative = exp2_poly(Abi::mul(Abi::negate(a), constant(1.4426950408889634f)));
+        return Abi::mul(Abi::add(positive, negative), constant(0.5f));
+    }
+
+    template<class Abi>
+    typename simd_math_approximation<Abi>::simd_type
+    simd_math_approximation<Abi>::pow(simd_type a, simd_type b) {
+        using int_abi = typename simd_find_abi<int, Abi::bytes * 8>::type;
+        // For a != 0, abs(a)^b = 2^(b*log2(abs(a))); restore a negative sign for odd integer b.
+        const auto magnitude = Abi::abs(a);
+        auto result = exp2_poly(Abi::mul(b, log2(magnitude)));
+
+        const auto odd_exponent = int_abi::eq(int_abi::bit_and(Abi::to_int(b), int_abi::set1(1)), int_abi::set1(1));
+        const auto integer_exponent = Abi::eq(Abi::trunc(b), b);
+        const auto negative_base = Abi::lt(a, constant(0.f));
+        const auto negative_result_mask = Abi::bit_and(negative_base, Abi::bit_and(integer_exponent, int_abi::as_float(odd_exponent)));
+        result = Abi::blend(negative_result_mask, Abi::negate(result), result);
+
+        const auto zero_result_mask = Abi::bit_and(Abi::eq(a, constant(0.f)), Abi::gt(b, constant(0.f)));
+        result = Abi::blend(zero_result_mask, constant(0.f), result);
+        const auto zero_power_mask = Abi::bit_and(Abi::eq(a, constant(0.f)), Abi::eq(b, constant(0.f)));
+        return Abi::blend(zero_power_mask, constant(1.f), result);
+    }
 
     // ------------------------------------------------
 
@@ -1306,6 +1585,7 @@ namespace kaixo {
         KAIXO_INLINE static basic_simd cbrt(const basic_simd& a) KAIXO_FROM_ABI(cbrt(a));
         KAIXO_INLINE static basic_simd exp(const basic_simd& a) KAIXO_FROM_ABI(exp(a));
         KAIXO_INLINE static basic_simd exp2(const basic_simd& a) KAIXO_FROM_ABI(exp2(a));
+        KAIXO_INLINE static basic_simd exp10(const basic_simd& a) KAIXO_FROM_ABI(exp10(a));
         KAIXO_INLINE static basic_simd tanh(const basic_simd& a) KAIXO_FROM_ABI(tanh(a));
         KAIXO_INLINE static basic_simd cos(const basic_simd& a) KAIXO_FROM_ABI(cos(a));
         KAIXO_INLINE static basic_simd cosh(const basic_simd& a) KAIXO_FROM_ABI(cosh(a));
