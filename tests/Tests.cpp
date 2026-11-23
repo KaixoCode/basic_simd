@@ -100,6 +100,20 @@ namespace kaixo::test {
         }
     }
 
+    TEST(BasicFloatTests, AllZero) {
+        alignas(simd_256::alignment) constexpr float data2[]{ -0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, };
+        alignas(simd_256::alignment) constexpr float data3[]{ 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, };
+        alignas(simd_256::alignment) constexpr float data4[]{ 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, };
+        alignas(simd_256::alignment) constexpr float data5[]{ 0.f, 0.f, 0.f, -0.f, 0.f, 0.f, 0.f, 0.f, };
+
+        EXPECT_TRUE(simd_256::setzero().all_zero());
+        EXPECT_FALSE(simd_256::set1(1).all_zero());
+        EXPECT_FALSE(simd_256::load(data2).all_zero());
+        EXPECT_FALSE(simd_256::load(data3).all_zero());
+        EXPECT_TRUE(simd_256::load(data4).all_zero());
+        EXPECT_FALSE(simd_256::load(data5).all_zero());
+    }
+
     TEST(BasicFloatTests, ScalarFallback) {
         using scalar_simd = basic_simd<float, simd_scalar_fallback_abi<float>>;
 

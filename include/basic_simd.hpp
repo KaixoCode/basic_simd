@@ -421,6 +421,10 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE static bool KAIXO_VECTORCALL all_zero(simd_type a) { return vmaxvq_u32(vreinterpretq_u32_f32(a)) == 0; }
+
+        // ------------------------------------------------
+
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL min(simd_type a, simd_type b) { return vminq_f32(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL max(simd_type a, simd_type b) { return vmaxq_f32(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL sign_min(simd_type a, simd_type b) { return blend(lt(abs(a), abs(b)), a, b); }
@@ -672,6 +676,10 @@ namespace kaixo {
 
         // ------------------------------------------------
 
+        KAIXO_INLINE static bool KAIXO_VECTORCALL all_zero(simd_type a) { return vmaxvq_u32(vreinterpretq_u32_s32(a)) == 0; }
+
+        // ------------------------------------------------
+
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL min(simd_type a, simd_type b) { return vminq_s32(a, b); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL max(simd_type a, simd_type b) { return vmaxq_s32(a, b); }
 
@@ -799,6 +807,10 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL lteq(simd_type a, simd_type b) { return _mm256_cmp_ps(a, b, _CMP_LE_OQ); }
 
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL lt0(simd_type a) { return _mm256_and_ps(a, _mm256_set1_ps(-0.0f)); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static bool KAIXO_VECTORCALL all_zero(simd_type a) { return _mm256_testz_si256(_mm256_castps_si256(a), _mm256_castps_si256(a)); }
 
         // ------------------------------------------------
 
@@ -1045,6 +1057,10 @@ namespace kaixo {
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL gteq(simd_type a, simd_type b) { return bit_or(gt(a, b), eq(a, b)); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL lt(simd_type a, simd_type b) { return bit_not(gteq(a, b)); }
         KAIXO_INLINE static simd_type KAIXO_VECTORCALL lteq(simd_type a, simd_type b) { return bit_not(gt(a, b)); }
+
+        // ------------------------------------------------
+
+        KAIXO_INLINE static bool KAIXO_VECTORCALL all_zero(simd_type a) { return _mm256_testz_si256(a, a); }
 
         // ------------------------------------------------
 
@@ -1601,6 +1617,9 @@ namespace kaixo {
         
         KAIXO_INLINE mask_type is_negative() const KAIXO_FROM_ABI(lt0(value));
         KAIXO_INLINE static mask_type is_negative(const basic_simd& a) KAIXO_FROM_ABI(lt0(a));
+        
+        KAIXO_INLINE bool all_zero() const KAIXO_FROM_ABI(all_zero(value));
+        KAIXO_INLINE static bool all_zero(const basic_simd& a) KAIXO_FROM_ABI(all_zero(a));
 
         // ------------------------------------------------
         
